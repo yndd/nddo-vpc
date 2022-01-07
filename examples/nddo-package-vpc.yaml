@@ -1,0 +1,8 @@
+apiVersion: pkg.ndd.yndd.io/v1
+kind: Intent
+metadata:
+  name: nddo-vpc
+  namespace: ndd-system
+spec:
+  package: yndd/nddo-intent-vpc:latest
+  packagePullPolicy: Always

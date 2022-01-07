@@ -1,0 +1,42 @@
+apiVersion: vpc.nddo.yndd.io/v1alpha1
+kind: Vpc
+metadata:
+  name: nokia.region1.infra
+  namespace: default
+spec:
+  vpc:
+    defaults:
+      tunnel: vxlan
+      protocol: evpn
+    admin-state: enable
+    description: vpc for server infrastructure
+    bridge-domains:
+    - name: infrastructure
+      tunnel: vxlan
+      protocol: evpn
+      interface-selector:
+      - tag:
+        - {key: kind, value: epg}
+        - {key: endpoint-group, value: server-pod1}
+        vlan: 40
+    routing-tables:
+    - name: infrastructure
+      tunnel: vxlan
+      protocol: evpn
+      bridge-domains:
+      - name: infrastructure
+        ipv4-prefixes: [100.112.3.0/24]
+        ipv6-prefixes: [2a02:1800:80:7000::/64]
+      interface-selector:
+      - tag:
+        - {key: kind, value: node-itfce}
+        - {key: leaf1, value: int-1/1/48}
+        ipv4-prefixes: [100.112.10.1/31]
+        ipv6-prefixes: [2a02:1800:80:7050::1/64]
+        vlan: 10
+      - tag:
+        - {key: kind, value: node-itfce}
+        - {key: leaf2, value: int-1/1/48}
+        ipv4-prefixes: [100.112.10.3/31]
+        ipv6-prefixes: [2a02:1800:80:7051::1/64]
+        vlan: 11

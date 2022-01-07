@@ -1,0 +1,16 @@
+apiVersion: vpc.nddo.yndd.io/v1alpha1
+kind: Vpc
+metadata:
+  name: nokia.region1.prov
+  namespace: default
+spec:
+  vpc:
+    admin-state: enable
+    description: vpc for server provisioning
+    bridge-domains:
+    - name: provisioning
+      interface-selector:
+      - tag:
+          - {key: kind, value: epg}
+          - {key: endpoint-group, value: server-pod1}
+        vlan: 10

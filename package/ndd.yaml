@@ -1,0 +1,8 @@
+
+apiVersion: meta.pkg.ndd.yndd.io/v1
+kind: Intent
+metadata:
+  name: nddo-intent-vpc
+spec:
+  controller:
+    image: yndd/nddo-intent-vpc-controller:latest
