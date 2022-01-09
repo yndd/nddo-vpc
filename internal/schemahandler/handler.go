@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/yndd/ndd-runtime/pkg/logging"
-	"github.com/yndd/nddo-vpc/internal/schema"
+	"github.com/yndd/nddo-vpc/pkg/schema"
 )
 
 func New(opts ...Option) (Handler, error) {

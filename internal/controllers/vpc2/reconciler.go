@@ -35,7 +35,7 @@ import (
 	"github.com/yndd/nddo-runtime/pkg/reconciler/managed"
 	"github.com/yndd/nddo-runtime/pkg/resource"
 	vpcv1alpha1 "github.com/yndd/nddo-vpc/apis/vpc/v1alpha1"
-	"github.com/yndd/nddo-vpc/internal/schema"
+	"github.com/yndd/nddo-vpc/pkg/schema"
 	"github.com/yndd/nddo-vpc/internal/schemahandler"
 	"github.com/yndd/nddo-vpc/internal/shared"
 	"github.com/yndd/nddr-org-registry/pkg/registry"
