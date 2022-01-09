@@ -9,31 +9,38 @@ import (
 
 func (x *schema) CreateDeviceInterfaceSubInterfaceAddressInfo(ai *DeviceInterfaceSubInterfaceAddressInfo) {
 	if d, ok := x.devices[*ai.DeviceName]; ok {
-		if i, ok := d.interfaces[*ai.DeviceInterfaceName]; ok {
-			if si, ok := i.subInterfaces[*ai.DeviceInterfaceSubInterfaceIndex]; ok {
+		if i, ok := d.GetInterfaces()[*ai.DeviceInterfaceName]; ok {
+			if si, ok := i.GetSubInterfaces()[*ai.DeviceInterfaceSubInterfaceIndex]; ok {
 				p := netaddr.MustParseIPPrefix(*ai.Prefix)
 				if p.IP().Is4() {
-					if subai, ok := si.ipv4[*ai.Prefix]; !ok {
-						si.ipv4[*ai.Prefix] = &deviceInterfaceSubInterfaceAddressInfo{
-							DeviceInterfaceSubInterfaceAddressInfo: ai,
-							subinterface:                           si,
-						}
+					if subai, ok := si.GetIpv4AddressInfo()[*ai.Prefix]; !ok {
+						si.GetIpv4AddressInfo()[*ai.Prefix] = NewAddressInfo(si, ai)
 					} else {
-						subai.DeviceInterfaceSubInterfaceAddressInfo = ai
+						subai.SetAddressInfo(ai)
 					}
-					
+
 				} else {
-					if subai, ok := si.ipv6[*ai.Prefix]; !ok {
-						si.ipv6[*ai.Prefix] = &deviceInterfaceSubInterfaceAddressInfo{
-							DeviceInterfaceSubInterfaceAddressInfo: ai,
-							subinterface:                           si,
-						}
+					if subai, ok := si.GetIpv6AddressInfo()[*ai.Prefix]; !ok {
+						si.GetIpv6AddressInfo()[*ai.Prefix] = NewAddressInfo(si, ai)
 					} else {
-						subai.DeviceInterfaceSubInterfaceAddressInfo = ai
-					}					
+						subai.SetAddressInfo(ai)
+					}
 				}
 			}
 		}
+	}
+}
+
+type AddressInfo interface {
+	GetAddressInfo() *DeviceInterfaceSubInterfaceAddressInfo
+	SetAddressInfo(*DeviceInterfaceSubInterfaceAddressInfo)
+	Print(string, string, int)
+}
+
+func NewAddressInfo(si NetworkSubInterface, ai *DeviceInterfaceSubInterfaceAddressInfo) AddressInfo {
+	return &deviceInterfaceSubInterfaceAddressInfo{
+		DeviceInterfaceSubInterfaceAddressInfo: ai,
+		subinterface:                           si,
 	}
 }
 
@@ -57,7 +64,15 @@ type deviceInterfaceSubInterfaceAddressInfo struct {
 	// Data
 	*DeviceInterfaceSubInterfaceAddressInfo
 	// Parent
-	subinterface *deviceInterfaceSubInterface
+	subinterface NetworkSubInterface
+}
+
+func (x *deviceInterfaceSubInterfaceAddressInfo) GetAddressInfo() *DeviceInterfaceSubInterfaceAddressInfo {
+	return x.DeviceInterfaceSubInterfaceAddressInfo
+}
+
+func (x *deviceInterfaceSubInterfaceAddressInfo) SetAddressInfo(ai *DeviceInterfaceSubInterfaceAddressInfo) {
+	x.DeviceInterfaceSubInterfaceAddressInfo = ai
 }
 
 func (x *deviceInterfaceSubInterfaceAddressInfo) Print(af, prefix string, n int) {

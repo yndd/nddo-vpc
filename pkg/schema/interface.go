@@ -8,16 +8,27 @@ import (
 
 func (x *schema) CreateDeviceInterface(di *DeviceInterface) {
 	if d, ok := x.devices[*di.DeviceName]; ok {
-		if i, ok := d.interfaces[*di.Name]; !ok {
-			d.interfaces[*di.Name] = &deviceInterface{
-				DeviceInterface: di,
-				device:          d,
-				subInterfaces:   make(map[uint32]*deviceInterfaceSubInterface),
-			}
+		if i, ok := d.GetInterfaces()[*di.Name]; !ok {
+			d.GetInterfaces()[*di.Name] = NewNetworkInterface(d, i.GetInterface())
 		} else {
-			i.DeviceInterface = di
+			i.SetInterface(di)
 		}
+	}
+}
 
+type NetworkInterface interface {
+	GetSubInterfaces() map[uint32]NetworkSubInterface
+	GetName() string
+	GetInterface() *DeviceInterface
+	SetInterface(*DeviceInterface)
+	Print(string, int)
+}
+
+func NewNetworkInterface(d NetworkDevice, di *DeviceInterface) NetworkInterface {
+	return &deviceInterface{
+		DeviceInterface: di,
+		device:          d,
+		subInterfaces:   make(map[uint32]NetworkSubInterface),
 	}
 }
 
@@ -40,8 +51,24 @@ type DeviceInterfaceData struct {
 
 type deviceInterface struct {
 	*DeviceInterface
-	device        *device
-	subInterfaces map[uint32]*deviceInterfaceSubInterface
+	device        NetworkDevice
+	subInterfaces map[uint32]NetworkSubInterface
+}
+
+func (x *deviceInterface) GetSubInterfaces() map[uint32]NetworkSubInterface {
+	return x.subInterfaces
+}
+
+func (x *deviceInterface) GetName() string {
+	return *x.Name
+}
+
+func (x *deviceInterface) GetInterface() *DeviceInterface {
+	return x.DeviceInterface
+}
+
+func (x *deviceInterface) SetInterface(d *DeviceInterface) {
+	x.DeviceInterface = d
 }
 
 func (x *deviceInterface) Print(itfceName string, n int) {

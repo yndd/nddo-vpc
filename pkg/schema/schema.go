@@ -8,7 +8,7 @@ type SchemaOption func(*schema)
 
 func NewSchema(opts ...SchemaOption) Schema {
 	i := &schema{
-		devices: make(map[string]*device),
+		devices: make(map[string]NetworkDevice),
 		//links: make(map[string]Link),
 		//nis:   make(map[string]Ni),
 	}
@@ -28,11 +28,16 @@ type Schema interface {
 	CreateDeviceNetworkInstance(*DeviceNetworkInstance)
 	CreateDeviceInterfaceSubInterface(*DeviceInterfaceSubInterface)
 	CreateDeviceInterfaceSubInterfaceAddressInfo(*DeviceInterfaceSubInterfaceAddressInfo)
+	GetDevices() map[string]NetworkDevice
 	PrintDevices(string)
 }
 
 type schema struct {
-	devices map[string]*device
+	devices map[string]NetworkDevice
+}
+
+func (x *schema) GetDevices() map[string]NetworkDevice{
+	return x.devices
 }
 
 func (x *schema) PrintDevices(crName string) {
