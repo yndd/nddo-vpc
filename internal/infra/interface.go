@@ -311,7 +311,10 @@ func (x *itfce) buildNddaInterface(cr vpcv1alpha1.Vp) *networkv1alpha1.Interface
 		Name:      resourceName,
 		Namespace: cr.GetNamespace(),
 		Labels: map[string]string{
-			networkv1alpha1.LabelInterfaceKindKey: x.GetKind(),
+			networkv1alpha1.LabelNddaDeploymentPolicy: cr.GetDeploymentPolicy(),
+			networkv1alpha1.LabelNddaOwner:            odns.GetOdnsResourceKindName(cr.GetName(), strings.ToLower(cr.GetObjectKind().GroupVersionKind().Kind)),
+			networkv1alpha1.LabelNddaNode:             x.GetNode().GetName(),
+			networkv1alpha1.LabelNddaItfce:            itfceName,
 		},
 		OwnerReferences: []metav1.OwnerReference{meta.AsController(meta.TypedReferenceTo(cr, vpcv1alpha1.VpcGroupVersionKind))},
 	}

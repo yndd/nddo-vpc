@@ -58,8 +58,15 @@ spec:
           spec:
             description: A VpcSpec defines the desired state of a Vpc.
             properties:
+              deployment-policy:
+                default: planned
+                description: DeploymentPolicy specifies what will happen to the deployment
+                enum:
+                - planned
+                - active
+                type: string
               vpc:
-                description: nddov1.OdaInfo `json:",inline"`
+                description: Vpc struct
                 properties:
                   admin-state:
                     default: enable

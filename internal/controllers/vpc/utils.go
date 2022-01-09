@@ -72,6 +72,7 @@ func (r *application) createNetworkInstanceSubInterfaces(ctx context.Context, cr
 	nodeName := nip.GetNodeName()
 	itfceName := nip.GetItfceName()
 	itfceIndex := nip.GetItfceIndex()
+	vlanId := nip.GetVlanId()
 	niName := nip.GetNiName()
 	niKind := nip.GetNiKind()
 	epgName := nip.GetEpgName()
@@ -105,6 +106,7 @@ func (r *application) createNetworkInstanceSubInterfaces(ctx context.Context, cr
 	si := itfce.GetSubInterfaces()[itfceIndex]
 	si.SetKind(infra.SubInterfaceKind(niKind))
 	si.SetTaggingKind(infra.TaggingKindSingleTagged)
+	si.SetOuterTag(vlanId)
 	si.SetEpgName(epgName)
 	si.SetItfceSelectorKind(nip.GetItfceSelectorKind())
 	si.SetItfceSelectorTags(nip.GetItfceSelectorTags())

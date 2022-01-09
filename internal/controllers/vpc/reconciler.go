@@ -38,6 +38,7 @@ import (
 	ipamv1alpha1 "github.com/yndd/nddr-ipam-registry/apis/ipam/v1alpha1"
 	"github.com/yndd/nddr-org-registry/pkg/registry"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
@@ -57,7 +58,9 @@ func Setup(mgr ctrl.Manager, o controller.Options, nddcopts *shared.NddControlle
 	name := "nddo/" + strings.ToLower(vpcv1alpha1.VpcGroupKind)
 	vpcfn := func() vpcv1alpha1.Vp { return &vpcv1alpha1.Vpc{} }
 	vpclfn := func() vpcv1alpha1.VpList { return &vpcv1alpha1.VpcList{} }
-	iflfn := func() networkv1alpha1.IfList { return &networkv1alpha1.InterfaceList{} }
+	nddaiflfn := func() networkv1alpha1.IfList { return &networkv1alpha1.InterfaceList{} }
+	nddasilfn := func() networkv1alpha1.SiList { return &networkv1alpha1.SubInterfaceList{} }
+	nddanilfn := func() networkv1alpha1.NiList { return &networkv1alpha1.NetworkInstanceList{} }
 
 	r := managed.NewReconciler(mgr,
 		resource.ManagedKind(vpcv1alpha1.VpcGroupVersionKind),
@@ -67,12 +70,14 @@ func Setup(mgr ctrl.Manager, o controller.Options, nddcopts *shared.NddControlle
 				Client:     mgr.GetClient(),
 				Applicator: resource.NewAPIPatchingApplicator(mgr.GetClient()),
 			},
-			log:              nddcopts.Logger.WithValues("applogic", name),
-			newVpc:           vpcfn,
-			newVpcList:       vpclfn,
-			newNddaItfceList: iflfn,
-			handler:          nddcopts.Handler,
-			registry:         nddcopts.Registry,
+			log:                     nddcopts.Logger.WithValues("applogic", name),
+			newVpc:                  vpcfn,
+			newVpcList:              vpclfn,
+			newNddaItfceList:        nddaiflfn,
+			newNddaSubInterfaceList: nddasilfn,
+			newNddaNiList:           nddanilfn,
+			handler:                 nddcopts.Handler,
+			registry:                nddcopts.Registry,
 		}),
 		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
 	)
@@ -101,16 +106,18 @@ type application struct {
 	client resource.ClientApplicator
 	log    logging.Logger
 
-	newVpc           func() vpcv1alpha1.Vp
-	newVpcList       func() vpcv1alpha1.VpList
-	newNddaItfceList func() networkv1alpha1.IfList
+	newVpc                  func() vpcv1alpha1.Vp
+	newVpcList              func() vpcv1alpha1.VpList
+	newNddaItfceList        func() networkv1alpha1.IfList
+	newNddaSubInterfaceList func() networkv1alpha1.SiList
+	newNddaNiList           func() networkv1alpha1.NiList
 
 	handler  handler.Handler
 	registry registry.Registry
 }
 
-func getCrName(cr vpcv1alpha1.Vp) string {
-	return strings.Join([]string{cr.GetNamespace(), cr.GetName()}, ".")
+func getCrName(mg resource.Managed) string {
+	return strings.Join([]string{mg.GetNamespace(), mg.GetName()}, ".")
 }
 
 func (r *application) Initialize(ctx context.Context, mg resource.Managed) error {
@@ -128,12 +135,9 @@ func (r *application) Initialize(ctx context.Context, mg resource.Managed) error
 }
 
 func (r *application) Update(ctx context.Context, mg resource.Managed) (map[string]string, error) {
-	cr, ok := mg.(*vpcv1alpha1.Vpc)
-	if !ok {
-		return nil, errors.New(errUnexpectedResource)
-	}
+	
 
-	return r.handleAppLogic(ctx, cr)
+	return r.handleAppLogic(ctx, mg)
 }
 
 func (r *application) FinalUpdate(ctx context.Context, mg resource.Managed) {
@@ -175,21 +179,25 @@ func (r *application) FinalDelete(ctx context.Context, mg resource.Managed) {
 	r.handler.Delete(getCrName(cr))
 }
 
-func (r *application) handleAppLogic(ctx context.Context, cr vpcv1alpha1.Vp) (map[string]string, error) {
-	log := r.log.WithValues("function", "handleAppLogic", "crname", cr.GetName())
+func (r *application) handleAppLogic(ctx context.Context, mg resource.Managed) (map[string]string, error) {
+	cr, ok := mg.(*vpcv1alpha1.Vpc)
+	if !ok {
+		return nil, errors.New(errUnexpectedResource)
+	}
+	log := r.log.WithValues("function", "handleAppLogic", "crname", mg.GetName())
 	log.Debug("handleAppLogic")
 
 	// initialize the cr elements
-	r.handler.Init(getCrName(cr))
+	r.handler.Init(getCrName(mg))
 
 	// Registers and grpc server
 
-	register, err := r.registry.GetRegister(ctx, cr.GetNamespace(), odns.Name2OdnsResource(cr.GetName()).GetOdns())
+	register, err := r.registry.GetRegister(ctx, mg)
 	if err != nil {
 		return nil, err
 	}
 
-	addressAllocationStrategy, err := r.registry.GetAddressAllocationStrategy(ctx, cr.GetNamespace(), odns.Name2OdnsResource(cr.GetName()).GetOdns())
+	addressAllocationStrategy, err := r.registry.GetAddressAllocationStrategy(ctx, mg)
 	if err != nil {
 		return nil, err
 	}
@@ -648,6 +656,10 @@ func (r *application) handleAppLogic(ctx context.Context, cr vpcv1alpha1.Vp) (ma
 	cr.SetAvailabilityZone(cr.GetAvailabilityZone())
 	cr.SetVpcName(cr.GetVpcName())
 
+	if err := r.getNddaResources(ctx, cr); err != nil {
+		return nil, err
+	}
+
 	return nil, nil
 
 }
@@ -810,6 +822,53 @@ func (r *application) validateBackend(ctx context.Context, cr vpcv1alpha1.Vp, ip
 			// delete node from backend
 			delete(nodes, nodeName)
 		}
+	}
+
+	return nil
+}
+
+func (r *application) getNddaResources(ctx context.Context, cr vpcv1alpha1.Vp) error {
+	/*
+		selector := labels.NewSelector()
+		req, err := labels.NewRequirement(networkv1alpha1.LabelNddaOwner,
+			selection.In,
+			[]string{odns.GetOdnsResourceKindName(cr.GetName(), strings.ToLower(cr.GetObjectKind().GroupVersionKind().Kind))})
+		if err != nil {
+			r.log.Debug("wrong object", "Error", err)
+			return err
+		}
+		selector = selector.Add(*req)
+	*/
+
+	opts := []client.ListOption{
+		client.MatchingLabels{networkv1alpha1.LabelNddaOwner: odns.GetOdnsResourceKindName(cr.GetName(), strings.ToLower(cr.GetObjectKind().GroupVersionKind().Kind))},
+	}
+
+	itfce := r.newNddaItfceList()
+	if err := r.client.List(ctx, itfce, opts...); err != nil {
+		return err
+	}
+
+	for _, nddaIf := range itfce.GetInterfaces() {
+		fmt.Printf("nddaIf: %s, info: %s\n", nddaIf.GetInterfaceName(), nddaIf.GetName())
+	}
+
+	si := r.newNddaSubInterfaceList()
+	if err := r.client.List(ctx, si, opts...); err != nil {
+		return err
+	}
+
+	for _, nddaSi := range si.GetSubInterfaces() {
+		fmt.Printf("nddaSi: %s, info: %s\n", nddaSi.GetInterfaceName(), nddaSi.GetName())
+	}
+
+	ni := r.newNddaNiList()
+	if err := r.client.List(ctx, ni, opts...); err != nil {
+		return err
+	}
+
+	for _, nddaNi := range ni.GetNetworkInstance() {
+		fmt.Printf("nddaNi: %s, info: %s\n", nddaNi.GetNodeName(), nddaNi.GetName())
 	}
 
 	return nil

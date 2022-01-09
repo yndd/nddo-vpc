@@ -59,6 +59,7 @@ type Vp interface {
 	GetDeployment() string
 	GetAvailabilityZone() string
 	GetVpcName() string
+	GetDeploymentPolicy() string
 	GetAdminState() string
 	GetDescription() string
 	InitializeResource() error
@@ -106,6 +107,13 @@ func (x *Vpc) GetAvailabilityZone() string {
 
 func (x *Vpc) GetVpcName() string {
 	return odns.Name2OdnsResource(x.GetName()).GetResourceName()
+}
+
+func (x *Vpc) GetDeploymentPolicy() string {
+	if reflect.ValueOf(x.Spec.ResourceSpec).IsZero() {
+		return ""
+	}
+	return string(x.Spec.ResourceSpec.DeploymentPolicy)
 }
 
 func (x *Vpc) GetAdminState() string {

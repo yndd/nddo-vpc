@@ -376,7 +376,12 @@ func (x *subInterface) buildNddaSubInterface(cr vpcv1alpha1.Vp) *networkv1alpha1
 		Name:      resourceName,
 		Namespace: cr.GetNamespace(),
 		Labels: map[string]string{
-			networkv1alpha1.LabelSubInterfaceKindKey: x.GetKind(),
+			networkv1alpha1.LabelNddaDeploymentPolicy: cr.GetDeploymentPolicy(),
+			networkv1alpha1.LabelNddaOwner:            odns.GetOdnsResourceKindName(cr.GetName(), strings.ToLower(cr.GetObjectKind().GroupVersionKind().Kind)),
+			networkv1alpha1.LabelNddaNode:             x.GetInterface().GetNode().GetName(),
+			networkv1alpha1.LabelNddaItfce:            itfceName,
+			networkv1alpha1.LabelNddaSubInterface:     index,
+			networkv1alpha1.LabelNddaNetworkInstance:  x.GetNi().GetName(),
 		},
 		OwnerReferences: []metav1.OwnerReference{meta.AsController(meta.TypedReferenceTo(cr, vpcv1alpha1.VpcGroupVersionKind))},
 	}

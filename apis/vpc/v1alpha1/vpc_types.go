@@ -19,7 +19,6 @@ package v1alpha1
 import (
 	"reflect"
 
-	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
 	nddov1 "github.com/yndd/nddo-runtime/apis/common/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -82,15 +81,15 @@ type VpcVpcRoutingTablesBridgeDomains struct {
 // A VpcSpec defines the desired state of a Vpc.
 type VpcSpec struct {
 	//nddov1.OdaInfo `json:",inline"`
-	Vpc *VpcVpc `json:"vpc,omitempty"`
+	nddov1.ResourceSpec `json:",inline"`
+	Vpc                 *VpcVpc `json:"vpc,omitempty"`
 }
 
 // A VpcStatus represents the observed state of a VpcSpec.
 type VpcStatus struct {
-	nddv1.ConditionedStatus `json:",inline"`
-	nddov1.OdaInfo          `json:",inline"`
-	VpcName                 *string     `json:"vpc-name,omitempty"`
-	Vpc                     *NddoVpcVpc `json:"Vpc,omitempty"`
+	nddov1.ResourceStatus `json:",inline"`
+	VpcName               *string     `json:"vpc-name,omitempty"`
+	Vpc                   *NddoVpcVpc `json:"Vpc,omitempty"`
 }
 
 // +kubebuilder:object:root=true
