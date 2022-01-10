@@ -19,6 +19,12 @@ func (x *schema) CreateDeviceInterface(di *DeviceInterface) {
 type NetworkInterface interface {
 	GetSubInterfaces() map[uint32]NetworkSubInterface
 	GetName() string
+	GetKind() string
+	IsLag() bool
+	IsLagMember() bool
+	GetLagName() string
+	HasLacp() bool
+	HasLacpFallback() bool
 	GetInterface() *DeviceInterface
 	SetInterface(*DeviceInterface)
 	Print(string, int)
@@ -61,6 +67,30 @@ func (x *deviceInterface) GetSubInterfaces() map[uint32]NetworkSubInterface {
 
 func (x *deviceInterface) GetName() string {
 	return *x.Name
+}
+
+func (x *deviceInterface) GetKind() string {
+	return *x.Kind
+}
+
+func (x *deviceInterface) IsLag() bool {
+	return *x.Lag
+}
+
+func (x *deviceInterface) IsLagMember() bool {
+	return *x.LagMember
+}
+
+func (x *deviceInterface) GetLagName() string {
+	return *x.LagName
+}
+
+func (x *deviceInterface) HasLacp() bool {
+	return *x.Lacp
+}
+
+func (x *deviceInterface) HasLacpFallback() bool {
+	return *x.LacpFallback
 }
 
 func (x *deviceInterface) GetInterface() *DeviceInterface {

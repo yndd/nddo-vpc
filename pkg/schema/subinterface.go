@@ -31,6 +31,9 @@ type NetworkSubInterface interface {
 	GetIpv6AddressInfo() map[string]AddressInfo
 	GetNetworkInstance() NetworkInstance
 	GetIndex() uint32
+	GetKind() string
+	GetOuterTag() uint32
+	GetInnerTag() uint32
 	GetSubInterface() *DeviceInterfaceSubInterface
 	SetSubInterface(*DeviceInterfaceSubInterface)
 	Print(string, int)
@@ -56,7 +59,7 @@ type DeviceInterfaceSubInterface struct {
 
 type DeviceInterfaceSubInterfaceData struct {
 	Index    *uint32
-	Neighbor *deviceInterfaceSubInterface
+	Neighbor NetworkSubInterface
 	Tagging  *string
 	Kind     *string
 	OuterTag *uint32
@@ -91,6 +94,22 @@ func (x *deviceInterfaceSubInterface) GetIndex() uint32 {
 	return *x.Index
 }
 
+func (x *deviceInterfaceSubInterface) GetKind() string {
+	return *x.Kind
+}
+
+func (x *deviceInterfaceSubInterface) GetOuterTag() uint32 {
+	return *x.OuterTag
+}
+
+func (x *deviceInterfaceSubInterface) GetInnerTag() uint32 {
+	return *x.InnerTag
+}
+
+func (x *deviceInterfaceSubInterface) GetNeighbor() NetworkSubInterface {
+	return x.Neighbor
+}
+
 func (x *deviceInterfaceSubInterface) GetSubInterface() *DeviceInterfaceSubInterface {
 	return x.DeviceInterfaceSubInterface
 }
@@ -110,15 +129,15 @@ func (x *deviceInterfaceSubInterface) Print(subItfceName string, n int) {
 	for prefix, i := range x.ipv6 {
 		i.Print("ipv6", prefix, n)
 	}
-	/*
-		if x.Neighbor != nil {
-			fmt.Printf("%s Neighbor Addressing Info\n", strings.Repeat(" ", n))
-			for prefix, i := range x.Neighbor.GetAddressesInfo(string(ipamv1alpha1.AddressFamilyIpv4)) {
-				i.Print(string(ipamv1alpha1.AddressFamilyIpv4), prefix, n)
-			}
-			for prefix, i := range x.neighbor.GetAddressesInfo(string(ipamv1alpha1.AddressFamilyIpv6)) {
-				i.Print(string(ipamv1alpha1.AddressFamilyIpv6), prefix, n)
-			}
+
+	if x.Neighbor != nil {
+		fmt.Printf("%s Neighbor Addressing Info\n", strings.Repeat(" ", n))
+		for prefix, i := range x.Neighbor.GetIpv4AddressInfo() {
+			i.Print(string("ipv4"), prefix, n)
 		}
-	*/
+		for prefix, i := range x.Neighbor.GetIpv6AddressInfo() {
+			i.Print(string("ipv6"), prefix, n)
+		}
+	}
+
 }

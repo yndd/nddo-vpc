@@ -34,6 +34,10 @@ func (x *schema) CreateDeviceInterfaceSubInterfaceAddressInfo(ai *DeviceInterfac
 type AddressInfo interface {
 	GetAddressInfo() *DeviceInterfaceSubInterfaceAddressInfo
 	SetAddressInfo(*DeviceInterfaceSubInterfaceAddressInfo)
+	GetPrefix() string
+	GetCidr() string
+	GetAddress() string
+	GetPrefixLength() uint32
 	Print(string, string, int)
 }
 
@@ -73,6 +77,22 @@ func (x *deviceInterfaceSubInterfaceAddressInfo) GetAddressInfo() *DeviceInterfa
 
 func (x *deviceInterfaceSubInterfaceAddressInfo) SetAddressInfo(ai *DeviceInterfaceSubInterfaceAddressInfo) {
 	x.DeviceInterfaceSubInterfaceAddressInfo = ai
+}
+
+func (x *deviceInterfaceSubInterfaceAddressInfo) GetPrefix() string {
+	return *x.Prefix
+}
+
+func (x *deviceInterfaceSubInterfaceAddressInfo) GetCidr() string {
+	return *x.Cidr
+}
+
+func (x *deviceInterfaceSubInterfaceAddressInfo) GetAddress() string {
+	return *x.Address
+}
+
+func (x *deviceInterfaceSubInterfaceAddressInfo) GetPrefixLength() uint32 {
+	return *x.PrefixLength
 }
 
 func (x *deviceInterfaceSubInterfaceAddressInfo) Print(af, prefix string, n int) {

@@ -18,6 +18,9 @@ type NetworkDevice interface {
 	GetInterfaces() map[string]NetworkInterface
 	GetNetworkInstances() map[string]NetworkInstance
 	GetName() string
+	GetKind() string
+	GetSwRelease() string
+	GetPlatform() string
 	GetDevice() *Device
 	SetDevice(*Device)
 	Print(string, int)
@@ -36,7 +39,7 @@ type Device struct {
 	Name     *string
 	Index    *uint32
 	Kind     *string
-	Release  *string
+	SwRelease  *string
 	Platform *string
 }
 
@@ -56,6 +59,22 @@ func (x *device) GetNetworkInstances() map[string]NetworkInstance {
 
 func (x *device) GetName() string {
 	return *x.Name
+}
+
+func (x *Device) GetIndex() uint32 {
+	return *x.Index
+}
+
+func (x *Device) GetKind() string {
+	return *x.Kind
+}
+
+func (x *Device) GetSwRelease() string {
+	return *x.SwRelease
+}
+
+func (x *Device) GetPlatform() string {
+	return *x.Platform
 }
 
 func (x *device) GetDevice() *Device {

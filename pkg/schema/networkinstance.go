@@ -19,6 +19,8 @@ func (x *schema) CreateDeviceNetworkInstance(dni *DeviceNetworkInstance) {
 type NetworkInstance interface {
 	GetSubInterfaces() map[string]NetworkSubInterface
 	GetName() string
+	GetIndex() uint32
+	GetKind() string
 	GetNetworkInstance() *DeviceNetworkInstance
 	SetNetworkInstance(*DeviceNetworkInstance)
 	Print(string, int)
@@ -26,9 +28,9 @@ type NetworkInstance interface {
 
 func NewNetworkInstance(d NetworkDevice, dni *DeviceNetworkInstance) NetworkInstance {
 	return &deviceNetworkInstance{
-		DeviceNetworkInstance:  dni,
-		device: d,
-		subInterfaces: make(map[string]NetworkSubInterface),
+		DeviceNetworkInstance: dni,
+		device:                d,
+		subInterfaces:         make(map[string]NetworkSubInterface),
 	}
 }
 
@@ -59,11 +61,19 @@ func (x *deviceNetworkInstance) GetName() string {
 	return *x.Name
 }
 
+func (x *deviceNetworkInstance) GetIndex() uint32 {
+	return *x.Index
+}
+
+func (x *deviceNetworkInstance) GetKind() string {
+	return *x.Kind
+}
+
 func (x *deviceNetworkInstance) GetNetworkInstance() *DeviceNetworkInstance {
 	return x.DeviceNetworkInstance
 }
 
-func (x *deviceNetworkInstance) SetNetworkInstance(d *DeviceNetworkInstance)  {
+func (x *deviceNetworkInstance) SetNetworkInstance(d *DeviceNetworkInstance) {
 	x.DeviceNetworkInstance = d
 }
 
