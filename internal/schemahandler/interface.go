@@ -24,6 +24,4 @@ type Handler interface {
 	//GetSchemaDevices(string) map[string]schema.Device
 	//GetSchemaNis(string) map[string]schema.Ni
 	PrintSchemaDevices(string)
-
 }
-
