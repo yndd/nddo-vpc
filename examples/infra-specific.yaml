@@ -18,7 +18,7 @@ spec:
       - tag:
         - {key: kind, value: epg}
         - {key: endpoint-group, value: server-pod1}
-        vlan: 40
+        outer-vlan-id: 40
     routing-tables:
     - name: infrastructure
       tunnel: vxlan
@@ -33,10 +33,10 @@ spec:
         - {key: leaf1, value: int-1/1/48}
         ipv4-prefixes: [100.112.10.1/31]
         ipv6-prefixes: [2a02:1800:80:7050::1/64]
-        vlan: 10
+        outer-vlan-id: 10
       - tag:
         - {key: kind, value: node-itfce}
         - {key: leaf2, value: int-1/1/48}
         ipv4-prefixes: [100.112.10.3/31]
         ipv6-prefixes: [2a02:1800:80:7051::1/64]
-        vlan: 11
+        outer-vlan-id: 11

@@ -19,16 +19,17 @@ import (
 	"time"
 
 	"github.com/yndd/ndd-runtime/pkg/logging"
-	"github.com/yndd/nddo-vpc/internal/handler"
-	"github.com/yndd/nddo-vpc/internal/schemahandler"
+	//"github.com/yndd/nddo-vpc/internal/nddahandler"
+
 	"github.com/yndd/nddr-org-registry/pkg/registry"
 )
 
 type NddControllerOptions struct {
-	Logger        logging.Logger
-	Poll          time.Duration
-	Namespace     string
-	Handler       handler.Handler
-	SchemaHandler schemahandler.Handler
-	Registry      registry.Registry
+	Logger    logging.Logger
+	Poll      time.Duration
+	Namespace string
+	//Handler       handler.Handler
+	//SchemaHandler schemahandler.Handler
+	//NddaHandler   nddahandler.Handler
+	Registry registry.Registry
 }

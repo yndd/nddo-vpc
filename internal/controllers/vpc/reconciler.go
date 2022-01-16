@@ -16,6 +16,7 @@ limitations under the License.
 
 package vpc
 
+/*
 import (
 	"context"
 	"errors"
@@ -135,7 +136,6 @@ func (r *application) Initialize(ctx context.Context, mg resource.Managed) error
 }
 
 func (r *application) Update(ctx context.Context, mg resource.Managed) (map[string]string, error) {
-	
 
 	return r.handleAppLogic(ctx, mg)
 }
@@ -178,7 +178,9 @@ func (r *application) FinalDelete(ctx context.Context, mg resource.Managed) {
 	}
 	r.handler.Delete(getCrName(cr))
 }
+*/
 
+/*
 func (r *application) handleAppLogic(ctx context.Context, mg resource.Managed) (map[string]string, error) {
 	cr, ok := mg.(*vpcv1alpha1.Vpc)
 	if !ok {
@@ -603,13 +605,13 @@ func (r *application) handleAppLogic(ctx context.Context, mg resource.Managed) (
 						r.log.Debug("ipam create prefix", "prefix", prefix, "af", ipamv1alpha1.AddressFamilyIpv4.String())
 
 						ipamOptions.AddressFamily = ipamv1alpha1.AddressFamilyIpv4.String()
-						/*
-							ipamOptions := &infra.IpamOptions{
-								RegistryName:        ipamName,
-								NetworkInstanceName: niName,
-								AddressFamily:       ipamv1alpha1.AddressFamilyIpv4.String(),
-							}
-						*/
+
+						//	ipamOptions := &infra.IpamOptions{
+						//		RegistryName:        ipamName,
+						//		NetworkInstanceName: niName,
+						//		AddressFamily:       ipamv1alpha1.AddressFamilyIpv4.String(),
+						//	}
+
 						r.log.Debug("ni routed creation/registration", "ipamOptions 2", *ipamOptions)
 						if err := ai.CreateIpamPrefix(ctx, cr, ipamOptions); err != nil {
 							return nil, err
@@ -625,13 +627,13 @@ func (r *application) handleAppLogic(ctx context.Context, mg resource.Managed) (
 						r.log.Debug("ipam create prefix", "prefix", prefix, "af", ipamv1alpha1.AddressFamilyIpv6.String())
 
 						ipamOptions.AddressFamily = ipamv1alpha1.AddressFamilyIpv6.String()
-						/*
-							ipamOptions := &infra.IpamOptions{
-								RegistryName:        ipamName,
-								NetworkInstanceName: niName,
-								AddressFamily:       ipamv1alpha1.AddressFamilyIpv6.String(),
-							}
-						*/
+
+						//	ipamOptions := &infra.IpamOptions{
+						//		RegistryName:        ipamName,
+						//		NetworkInstanceName: niName,
+						//		AddressFamily:       ipamv1alpha1.AddressFamilyIpv6.String(),
+						//	}
+
 						r.log.Debug("ni routed creation/registration", "ipamOptions 3", *ipamOptions)
 						if err := ai.CreateIpamPrefix(ctx, cr, ipamOptions); err != nil {
 							return nil, err
@@ -663,7 +665,8 @@ func (r *application) handleAppLogic(ctx context.Context, mg resource.Managed) (
 	return nil, nil
 
 }
-
+*/
+/*
 func (r *application) validateBackend(ctx context.Context, cr vpcv1alpha1.Vp, ipamName, niRegistryName string, activeNiNodeLinks []niselector.ItfceInfo) error {
 
 	nodes := r.handler.GetInfraNodes(getCrName(cr))
@@ -826,19 +829,11 @@ func (r *application) validateBackend(ctx context.Context, cr vpcv1alpha1.Vp, ip
 
 	return nil
 }
+*/
 
+/*
 func (r *application) getNddaResources(ctx context.Context, cr vpcv1alpha1.Vp) error {
-	/*
-		selector := labels.NewSelector()
-		req, err := labels.NewRequirement(networkv1alpha1.LabelNddaOwner,
-			selection.In,
-			[]string{odns.GetOdnsResourceKindName(cr.GetName(), strings.ToLower(cr.GetObjectKind().GroupVersionKind().Kind))})
-		if err != nil {
-			r.log.Debug("wrong object", "Error", err)
-			return err
-		}
-		selector = selector.Add(*req)
-	*/
+
 
 	opts := []client.ListOption{
 		client.MatchingLabels{networkv1alpha1.LabelNddaOwner: odns.GetOdnsResourceKindName(cr.GetName(), strings.ToLower(cr.GetObjectKind().GroupVersionKind().Kind))},
@@ -873,3 +868,4 @@ func (r *application) getNddaResources(ctx context.Context, cr vpcv1alpha1.Vp) e
 
 	return nil
 }
+*/

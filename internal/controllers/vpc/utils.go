@@ -16,22 +16,7 @@ limitations under the License.
 
 package vpc
 
-import (
-	"context"
-	"fmt"
-	"math/big"
-	"net"
-	"strconv"
-	"strings"
-
-	networkv1alpha1 "github.com/yndd/ndda-network/apis/network/v1alpha1"
-	nddov1 "github.com/yndd/nddo-runtime/apis/common/v1"
-	"github.com/yndd/nddo-runtime/pkg/niselector"
-	vpcv1alpha1 "github.com/yndd/nddo-vpc/apis/vpc/v1alpha1"
-	"github.com/yndd/nddo-vpc/internal/infra"
-	"github.com/yndd/nddr-org-registry/pkg/registry"
-)
-
+/*
 func (r *application) createGlobalNetworkInstance(ctx context.Context, cr vpcv1alpha1.Vp, nip niselector.ItfceInfo) (infra.Ni, error) {
 
 	nis := r.handler.GetInfraNis(getCrName(cr))
@@ -225,150 +210,33 @@ func (r *application) createNetworkInstanceSubInterfaces(ctx context.Context, cr
 	return si, nil
 
 }
-
+*/
+/*
 func getSelectedNodeItfces(epgSelectors []*nddov1.EpgInfo, nodeItfceSelectors map[string]*nddov1.ItfceInfo, nddaItfceList networkv1alpha1.IfList) map[string][]niselector.ItfceInfo {
 	s := niselector.NewNodeItfceSelection()
 	s.GetNodeItfcesByEpgSelector(epgSelectors, nddaItfceList)
 	s.GetNodeItfcesByNodeItfceSelector(nodeItfceSelectors, nddaItfceList)
 	return s.GetSelectedNodeItfces()
 }
-
-/*
-func getSelectedNodeItfces(epgSelectors []*nddov1.EpgInfo, nodeItfceSelectors map[string]*nddov1.ItfceInfo, nddaItfceList networkv1alpha1.IfList) *selectedNodeItfces {
-	selectedNodeItfces := NewSelectedNodeItfces()
-	getNodeItfcesByEpgSelector(epgSelectors, nddaItfceList, selectedNodeItfces)
-	getNodeItfcesByNodeItfceSelector(nodeItfceSelectors, nddaItfceList, selectedNodeItfces)
-	return selectedNodeItfces
-}
-
-func getNodeItfcesByEpgSelector(epgSelectors []*nddov1.EpgInfo, nddaItfceList networkv1alpha1.IfList, selectedNodeItfces *selectedNodeItfces) {
-	for _, nddaItfce := range nddaItfceList.GetInterfaces() {
-		//fmt.Printf("getNodeItfcesByEpgSelector: epg: %s, itfceepg: %s, nodename: %s, itfcename: %s, lagmember: %t\n", epg, nddaItfce.GetEndpointGroup(), nddaItfce.GetNodeName(), nddaItfce.GetInterfaceName(), nddaItfce.GetLagMember())
-		// TODO add specifc endpoint group selector
-		for _, epgSelector := range epgSelectors {
-			if epgSelector.EpgName != "" && nddaItfce.GetEndpointGroup() == epgSelector.EpgName {
-				fmt.Printf("getNodeItfcesByEpgSelector: %s\n", nddaItfce.GetName())
-				// avoid selecting lag members
-				if !nddaItfce.GetLagMember() {
-					selectedNodeItfces.AddNodeItfce(nddaItfce.GetNodeName(), nddaItfce.GetInterfaceName(), epgSelector.EpgName, epgSelector.VlanID, epgSelector.Ipv4Prefixes, epgSelector.Ipv6Prefixes)
-				}
-			}
-		}
-
-	}
-	//return selectedNodeItfces
-}
-
-func getNodeItfcesByNodeItfceSelector(nodeItfceSelectors map[string]*nddov1.ItfceInfo, nddaItfceList networkv1alpha1.IfList, selectedNodeItfces *selectedNodeItfces) {
-	for _, nddaItfce := range nddaItfceList.GetInterfaces() {
-		for nodeName, itfceInfo := range nodeItfceSelectors {
-			//fmt.Printf("getNodeItfcesByNodeItfceSelector: nodename: %s, itfcename: %s, lagmember: %t, nodename: %s\n", nddaItfce.GetNodeName(), nddaItfce.GetInterfaceName(), nddaItfce.GetLagMember(), nodeName)
-			// avoid selecting lag members
-			if !nddaItfce.GetLagMember() && nddaItfce.GetNodeName() == nodeName && nddaItfce.GetInterfaceName() == itfceInfo.ItfceName {
-				fmt.Printf("getNodeItfcesByNodeItfceSelector: nodename: %s, itfcename: %s, lagmember: %t, nodename: %s\n", nddaItfce.GetNodeName(), nddaItfce.GetInterfaceName(), nddaItfce.GetLagMember(), nodeName)
-				selectedNodeItfces.AddNodeItfce(nddaItfce.GetNodeName(), nddaItfce.GetInterfaceName(), "", itfceInfo.VlanID, itfceInfo.Ipv4Prefixes, itfceInfo.Ipv6Prefixes)
-			}
-
-		}
-	}
-	//return selectedNodeItfces
-}
-
-func NewSelectedNodeItfces() *selectedNodeItfces {
-	return &selectedNodeItfces{
-		nodes: make(map[string][]*itfceInfo),
-	}
-}
-
-type selectedNodeItfces struct {
-	nodes map[string][]*itfceInfo
-}
-
-type itfceInfo struct {
-	epgName      string
-	name         string
-	vlanID       uint32
-	ipv4Prefixes []*string
-	ipv6Prefixes []*string
-}
-
-func (x *selectedNodeItfces) AddNodeItfce(nodeName, intName, epgname string, vlanID uint32, ipv4Prefixes, ipv6Prefixes []*string) {
-	// check if node exists, if not initialize the node
-	if _, ok := x.nodes[nodeName]; !ok {
-		x.nodes[nodeName] = make([]*itfceInfo, 0)
-	}
-	// check if the interfacename was already present
-	// if not add it to the list
-	for _, itfceInfo := range x.nodes[nodeName] {
-		if string(itfceInfo.name) == intName {
-			return
-		}
-	}
-	fmt.Printf("AddNodeItfce node: %s, intName: %s, vlanId: %d\n", nodeName, intName, vlanID)
-	x.nodes[nodeName] = append(x.nodes[nodeName], &itfceInfo{
-		epgName:      epgname,
-		name:         intName,
-		vlanID:       vlanID,
-		ipv4Prefixes: ipv4Prefixes,
-		ipv6Prefixes: ipv6Prefixes,
-	})
-}
 */
 
+/*
 func getIrbNodeItfces(bd *vpcv1alpha1.VpcVpcRoutingTablesBridgeDomains, activeNiNodeAndLinks []niselector.ItfceInfo, nddaItfceList networkv1alpha1.IfList) map[string][]niselector.ItfceInfo {
 	s := niselector.NewNodeItfceSelection()
 	s.GetIrbNodeItfces(strings.Join([]string{bd.GetName(), infra.NiKindBridged.String()}, "-"), activeNiNodeAndLinks, nddaItfceList, bd.GetIPv4Prefixes(), bd.GetIPv6Prefixes())
 	return s.GetSelectedNodeItfces()
 }
 
-/*
-func getIrbNodeItfces(bd *vpcv1alpha1.VpcVpcRoutingTablesBridgeDomains, activeNiNodeAndLinks []niselector.ItfceInfo, nddaItfces networkv1alpha1.IfList) *selectedNodeItfces {
-	selectedNodeItfces := NewSelectedNodeItfces()
 
-	// walk through all interfaces in the NDDA layer
-	// for all the nodes on which the bridge domain match (from the activeNiNodeAndLinks)
-	// select the irb interfaces
-	for _, nddaItfce := range nddaItfces.GetInterfaces() {
-		for _, nip := range activeNiNodeAndLinks {
-			// network instance match
-			if nip.niName == strings.Join([]string{bd.GetName(), infra.NiKindBridged.String()}, ".") {
-				if nddaItfce.GetNodeName() == nip.nodeName && nddaItfce.GetKind() == "irb" {
-					selectedNodeItfces.AddNodeItfce(nip.nodeName, nddaItfce.GetInterfaceName(), nip.epgName, nip.vlanID, bd.GetIPv4Prefixes(), bd.GetIPv6Prefixes())
-				}
-			}
-		}
-	}
-	return selectedNodeItfces
-}
-*/
 
 func getVxlanNodeItfces(niName string, activeNiNodeAndLinks []niselector.ItfceInfo, nddaItfceList networkv1alpha1.IfList) map[string][]niselector.ItfceInfo {
 	s := niselector.NewNodeItfceSelection()
 	s.GetVxlanNodeItfces(strings.Join([]string{niName, infra.NiKindBridged.String()}, "-"), activeNiNodeAndLinks, nddaItfceList)
 	return s.GetSelectedNodeItfces()
 }
-
-/*
-func getVxlanNodeItfces(niName string, activeNiNodeAndLinks []niselector.ItfceInfo, nddaItfceList networkv1alpha1.IfList) *selectedNodeItfces {
-	selectedNodeItfces := NewSelectedNodeItfces()
-
-	// walk through all interfaces in the NDDA layer
-	// for all the nodes on which the niName match (from the activeNiNodeAndLinks)
-	// select the irb interfaces
-	for _, nddaItfce := range nddaItfceList.GetInterfaces() {
-		for _, nip := range activeNiNodeAndLinks {
-			// network instance match
-			if nip.niName == strings.Join([]string{niName, infra.NiKindBridged.String()}, ".") {
-				if nddaItfce.GetNodeName() == nip.nodeName && nddaItfce.GetKind() == "vxlan" {
-					selectedNodeItfces.AddNodeItfce(nip.nodeName, nddaItfce.GetInterfaceName(), nip.epgName, nip.vlanID, make([]*string, 0), make([]*string, 0))
-				}
-			}
-		}
-	}
-	return selectedNodeItfces
-}
 */
 
+/*
 // GetLastIP returns subnet's last IP
 func GetLastIP(subnet *net.IPNet) (net.IP, error) {
 	size := RangeSize(subnet)
@@ -422,3 +290,4 @@ func bigForIP(ip net.IP) *big.Int {
 	}
 	return big.NewInt(0).SetBytes(b)
 }
+*/

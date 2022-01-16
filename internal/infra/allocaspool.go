@@ -16,6 +16,7 @@ limitations under the License.
 
 package infra
 
+/*
 import (
 	"strconv"
 	"strings"
@@ -72,3 +73,4 @@ func buildAsPoolAllocByIndex(cr vpcv1alpha1.Vp, x topov1alpha1.Tn, asRegistry st
 	//r.Spec.Oda = cr.GetOda().Oda
 	//return r
 }
+*/

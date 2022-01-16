@@ -16,6 +16,7 @@ limitations under the License.
 
 package infra
 
+/*
 import (
 	"fmt"
 
@@ -119,3 +120,4 @@ func (x *infra) PrintNodes(crname string) {
 		n.Print(name, 1)
 	}
 }
+*/

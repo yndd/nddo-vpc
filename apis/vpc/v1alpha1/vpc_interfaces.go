@@ -55,11 +55,12 @@ type Vp interface {
 
 	GetCondition(ct nddv1.ConditionKind) nddv1.Condition
 	SetConditions(c ...nddv1.Condition)
+	GetDeploymentPolicy() nddov1.DeploymentPolicy
+	SetDeploymentPolicy(nddov1.DeploymentPolicy)
 	GetOrganization() string
 	GetDeployment() string
 	GetAvailabilityZone() string
 	GetVpcName() string
-	GetDeploymentPolicy() string
 	GetAdminState() string
 	GetDescription() string
 	InitializeResource() error
@@ -93,6 +94,14 @@ func (x *Vpc) SetConditions(c ...nddv1.Condition) {
 	x.Status.SetConditions(c...)
 }
 
+func (x *Vpc) GetDeploymentPolicy() nddov1.DeploymentPolicy {
+	return x.Spec.DeploymentPolicy
+}
+
+func (x *Vpc) SetDeploymentPolicy(c nddov1.DeploymentPolicy) {
+	x.Spec.DeploymentPolicy = c
+}
+
 func (x *Vpc) GetOrganization() string {
 	return odns.Name2OdnsResource(x.GetName()).GetOrganization()
 }
@@ -107,13 +116,6 @@ func (x *Vpc) GetAvailabilityZone() string {
 
 func (x *Vpc) GetVpcName() string {
 	return odns.Name2OdnsResource(x.GetName()).GetResourceName()
-}
-
-func (x *Vpc) GetDeploymentPolicy() string {
-	if reflect.ValueOf(x.Spec.ResourceSpec).IsZero() {
-		return ""
-	}
-	return string(x.Spec.ResourceSpec.DeploymentPolicy)
 }
 
 func (x *Vpc) GetAdminState() string {

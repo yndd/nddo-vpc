@@ -13,4 +13,4 @@ spec:
       - tag:
           - {key: kind, value: epg}
           - {key: endpoint-group, value: server-pod1}
-        vlan: 10
+        outer-vlan-id: 10

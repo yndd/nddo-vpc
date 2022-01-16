@@ -16,6 +16,7 @@ limitations under the License.
 
 package infra
 
+/*
 import (
 	"strings"
 
@@ -169,3 +170,4 @@ func buildIpamAllocEndPoint(cr vpcv1alpha1.Vp, x topov1alpha1.Tl, ipamOptions *I
 	//r.Spec.Oda = cr.GetOda().Oda
 	//return r
 }
+*/

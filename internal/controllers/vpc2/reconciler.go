@@ -16,29 +16,7 @@ limitations under the License.
 
 package vpc2
 
-import (
-	"context"
-	"errors"
-	"strings"
-	"time"
-
-	"github.com/yndd/ndd-runtime/pkg/event"
-	"github.com/yndd/ndd-runtime/pkg/logging"
-	"github.com/yndd/ndd-runtime/pkg/utils"
-	networkv1alpha1 "github.com/yndd/ndda-network/apis/network/v1alpha1"
-	"github.com/yndd/nddo-runtime/pkg/nddo"
-	"github.com/yndd/nddo-runtime/pkg/reconciler/managed"
-	"github.com/yndd/nddo-runtime/pkg/resource"
-	vpcv1alpha1 "github.com/yndd/nddo-vpc/apis/vpc/v1alpha1"
-	"github.com/yndd/nddo-vpc/internal/schemahandler"
-	"github.com/yndd/nddo-vpc/internal/shared"
-	"github.com/yndd/nddo-vpc/pkg/schema"
-	"github.com/yndd/nddr-org-registry/pkg/registry"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/source"
-)
-
+/*
 const (
 	// timers
 	reconcileTimeout = 1 * time.Minute
@@ -160,25 +138,14 @@ func (r *application) FinalUpdate(ctx context.Context, mg resource.Managed) {
 	}
 	r.handler.PrintSchemaDevices(getCrName(cr))
 }
+*/
 
+/*
 func (r *application) Timeout(ctx context.Context, mg resource.Managed) time.Duration {
 	_, ok := mg.(*vpcv1alpha1.Vpc)
 	if !ok {
 		return reconcileTimeout
 	}
-	/*
-		speedy := r.handler.GetSpeedy(getCrName(cr))
-		if speedy <= 2 {
-			r.handler.IncrementSpeedy(getCrName(cr))
-			r.log.Debug("Speedy incr", "number", r.handler.GetSpeedy(getCrName(cr)))
-			switch speedy {
-			case 0:
-				return veryShortWait
-			case 1, 2:
-				return shortWait
-			}
-		}
-	*/
 	return reconcileTimeout
 }
 
@@ -193,19 +160,6 @@ func (r *application) FinalDelete(ctx context.Context, mg resource.Managed) {
 	}
 	r.handler.DestroySchema(getCrName(cr))
 }
-
-/*
-func (r *application) handleAppLogic(ctx context.Context, cr vpcv1alpha1.Vp) (map[string]string, error) {
-
-	// r.allocateResources(ctx, cr)
-
-	// r.validateDelta(ctx, cr)
-
-	// r.applyIntent(ctx, cr)
-
-	return nil, nil
-}
-*/
 
 func (r *application) populateSchema(ctx context.Context, mg resource.Managed) error {
 	cr, ok := mg.(*vpcv1alpha1.Vpc)
@@ -351,3 +305,4 @@ func (r *application) populateSchema(ctx context.Context, mg resource.Managed) e
 
 	return nil
 }
+*/

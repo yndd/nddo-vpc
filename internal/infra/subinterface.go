@@ -15,6 +15,7 @@ limitations under the License.
 */
 package infra
 
+/*
 import (
 	"context"
 	"fmt"
@@ -457,3 +458,4 @@ func (x *subInterface) Print(subItfceName string, n int) {
 		}
 	}
 }
+*/

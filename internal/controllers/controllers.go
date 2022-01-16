@@ -20,14 +20,14 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	"github.com/yndd/nddo-vpc/internal/controllers/vpc"
+	"github.com/yndd/nddo-vpc/internal/controllers/vpc3"
 	"github.com/yndd/nddo-vpc/internal/shared"
 )
 
 // Setup package controllers.
 func Setup(mgr ctrl.Manager, option controller.Options, nddcopts *shared.NddControllerOptions) error {
 	for _, setup := range []func(ctrl.Manager, controller.Options, *shared.NddControllerOptions) error{
-		vpc.Setup,
+		vpc3.Setup,
 	} {
 		if err := setup(mgr, option, nddcopts); err != nil {
 			return err

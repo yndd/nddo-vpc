@@ -16,22 +16,9 @@ limitations under the License.
 
 package vpc
 
-import (
-	"context"
+//ndddvrv1 "github.com/yndd/ndd-core/apis/dvr/v1"
 
-	//ndddvrv1 "github.com/yndd/ndd-core/apis/dvr/v1"
-	"github.com/yndd/ndd-runtime/pkg/logging"
-	networkv1alpha1 "github.com/yndd/ndda-network/apis/network/v1alpha1"
-	vpcv1alpha1 "github.com/yndd/nddo-vpc/apis/vpc/v1alpha1"
-	"github.com/yndd/nddo-vpc/internal/handler"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/util/workqueue"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-)
-
+/*
 type adder interface {
 	Add(item interface{})
 }
@@ -96,3 +83,4 @@ func (e *EnqueueRequestForAllNddaInterfaces) add(obj runtime.Object, queue adder
 		}
 	}
 }
+*/

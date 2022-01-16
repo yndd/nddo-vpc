@@ -30,7 +30,6 @@ type handler struct {
 	schema map[string]schema.Schema
 }
 
-
 func (r *handler) NewSchema(crName string) schema.Schema {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
@@ -46,33 +45,10 @@ func (r *handler) DestroySchema(crName string) {
 	delete(r.schema, crName)
 }
 
-/*
-func (r *handler) GetSchemaLinks(crName string) map[string]schema.Link {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	return r.schema[crName].GetLinks()
-}
-*/
-
-/*
-func (r *handler) GetSchemaDevices(crName string) map[string]schema.Device {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	return r.schema[crName].GetDevices()
-}
-*/
-
-/*
-func (r *handler) GetSchemaNis(crName string) map[string]schema.Ni {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	return r.schema[crName].GetNis()
-}
-*/
-
-
 func (r *handler) PrintSchemaDevices(crName string) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 	r.schema[crName].PrintDevices(crName)
 }
+
+func (r *handler) PopulateSchema(crName string) {}

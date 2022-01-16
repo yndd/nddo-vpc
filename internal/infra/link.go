@@ -15,6 +15,7 @@ limitations under the License.
 */
 package infra
 
+/*
 import (
 	"context"
 
@@ -230,3 +231,4 @@ func (x *link) ValidateIPLinkEndpoint(ctx context.Context, cr vpcv1alpha1.Vp, tl
 	}
 	return nil, errors.Errorf("%s: %s", errUnavailableIpamAllocation, ipamAlloc.GetCondition(ipamv1alpha1.ConditionKindReady).Message)
 }
+*/

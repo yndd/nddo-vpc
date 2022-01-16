@@ -15,6 +15,7 @@ limitations under the License.
 */
 package infra
 
+/*
 import (
 	"context"
 	"fmt"
@@ -319,12 +320,12 @@ func (x *addressInfo) buildGrpcAllocateEndPointIP(cr vpcv1alpha1.Vp, ipamOptions
 	nodeName := x.GetSubInterface().GetInterface().GetNode().GetName()
 
 	var name string
-	/*
-		niName := x.GetSubInterface().GetNi().GetName()
-		if x.GetSubInterface().GetInterface().GetKind() == "irb" {
-			niName = strings.ReplaceAll(niName, "bridged", "routed")
-		}
-	*/
+
+	//	niName := x.GetSubInterface().GetNi().GetName()
+	//	if x.GetSubInterface().GetInterface().GetKind() == "irb" {
+	//		niName = strings.ReplaceAll(niName, "bridged", "routed")
+	//	}
+
 
 	epgName := x.GetSubInterface().GetEpgName()
 
@@ -365,3 +366,4 @@ func (x *addressInfo) buildGrpcAllocateEndPointIP(cr vpcv1alpha1.Vp, ipamOptions
 		},
 	}
 }
+*/

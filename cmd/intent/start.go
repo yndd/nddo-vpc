@@ -33,7 +33,6 @@ import (
 	"github.com/yndd/nddr-org-registry/pkg/registry"
 
 	"github.com/yndd/nddo-vpc/internal/controllers"
-	"github.com/yndd/nddo-vpc/internal/handler"
 
 	"github.com/yndd/nddo-vpc/internal/shared"
 )
@@ -77,19 +76,10 @@ var startCmd = &cobra.Command{
 			return errors.Wrap(err, "Cannot create manager")
 		}
 
-		handler, err := handler.New(
-			handler.WithLogger(logging.NewLogrLogger(zlog.WithName("handler"))),
-			handler.WithClient(mgr.GetClient()),
-		)
-		if err != nil {
-			return errors.Wrap(err, "cannot initialize the handler")
-		}
-
 		nddcopts := &shared.NddControllerOptions{
 			Logger:    logging.NewLogrLogger(zlog.WithName("vpc")),
 			Poll:      pollInterval,
 			Namespace: namespace,
-			Handler:   handler,
 			Registry: registry.New(
 				registry.WithLogger(logging.NewLogrLogger(zlog.WithName("registry"))),
 				registry.WithClient(mgr.GetClient()),

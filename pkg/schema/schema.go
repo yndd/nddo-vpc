@@ -39,8 +39,6 @@ type Schema interface {
 	PrintDevices(string)
 
 	PopulateSchema(deviceName string, itfceInfo ItfceInfo, niInfo *DeviceNetworkInstanceData, addressAllocationStrategy *nddov1.AddressAllocationStrategy) error
-
-	
 }
 
 type schema struct {
@@ -80,9 +78,9 @@ func (x *schema) PopulateSchema(deviceName string, itfceInfo ItfceInfo, niInfo *
 			InnerTag: utils.Uint32Ptr(itfceInfo.GetVlanId()), // user defined, what to do when user is not defining them?
 
 		}
-	} else {
+	} else { // vxlan or irb
 		si = &DeviceInterfaceSubInterfaceData{
-			Kind: utils.StringPtr("vxlan"),
+			Kind: utils.StringPtr(itfceInfo.GetItfceKind()),
 			//Neighbor:      // not relevant
 			Index: utils.Uint32Ptr(itfceInfo.GetItfceIndex()),
 			//OuterTag: utils.Uint32Ptr(itfceInfo.GetVlanId()), // user defined, what to do when user is not defining them?

@@ -1,9 +1,11 @@
-package handler
+package nddahandler
 
 /*
 import (
 	"github.com/yndd/ndd-runtime/pkg/logging"
-	"github.com/yndd/nddo-vpc/internal/infra"
+	nddaschema "github.com/yndd/ndda-network/pkg/ndda/v1alpha1"
+	nddov1 "github.com/yndd/nddo-runtime/apis/common/v1"
+	"github.com/yndd/nddo-vpc/pkg/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -25,16 +27,11 @@ func WithClient(c client.Client) Option {
 
 type Handler interface {
 	WithLogger(log logging.Logger)
-	WithClient(client.Client)
-	Init(string)
-	Delete(string)
-	ResetSpeedy(string)
-	GetSpeedy(crName string) int
-	IncrementSpeedy(crName string)
+	WithClient(c client.Client)
+	NewSchema(crName string) nddaschema.Schema
+	DestroySchema(crName string)
+	PopulateSchema(crName, deviceName string, itfceInfo schema.ItfceInfo, niInfo *schema.DeviceNetworkInstanceData, addressAllocationStrategy *nddov1.AddressAllocationStrategy) error
 
-	PrintInfraNodes(string)
-	GetInfraLinks(string) map[string]infra.Link
-	GetInfraNodes(string) map[string]infra.Node
-	GetInfraNis(string) map[string]infra.Ni
+	PrintSchemaDevices(string)
 }
 */

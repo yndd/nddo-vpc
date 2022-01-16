@@ -15,6 +15,7 @@ limitations under the License.
 */
 package infra
 
+/*
 import (
 	"context"
 	"fmt"
@@ -473,12 +474,7 @@ func (x *ni) GrpcDeAllocateNiIndex(ctx context.Context, cr vpcv1alpha1.Vp, niOpt
 }
 
 func buildGrpcAllocateNiIndex(cr vpcv1alpha1.Vp, niOptions *NiOptions) *resourcepb.Request {
-	/*
-		oda := make(map[string]string)
-		oda[nddov1.OdaKindOrganization.String()] = cr.GetOrganization()
-		oda[nddov1.OdaKindDeployment.String()] = cr.GetDeployment()
-		oda[nddov1.OdaKindAvailabiityZone.String()] = cr.GetAvailabilityZone()
-	*/
+
 	registerName := odns.GetOdnsRegisterName(cr.GetName(),
 		[]string{strings.ToLower(cr.GetObjectKind().GroupVersionKind().Kind), niOptions.RegistryName},
 		[]string{niOptions.NetworkInstanceName})
@@ -505,3 +501,4 @@ type NiOptions struct {
 	RegistryName        string
 	NetworkInstanceName string
 }
+*/

@@ -36,11 +36,11 @@ func NewNetworkDevice(d *Device) NetworkDevice {
 
 type Device struct {
 	// Data
-	Name     *string
-	Index    *uint32
-	Kind     *string
-	SwRelease  *string
-	Platform *string
+	Name      *string
+	Index     *uint32
+	Kind      *string
+	SwRelease *string
+	Platform  *string
 }
 
 type device struct {

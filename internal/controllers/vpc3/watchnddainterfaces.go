@@ -14,9 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package vpc2
+package vpc3
 
-/*
 import (
 	"context"
 
@@ -24,7 +23,7 @@ import (
 	"github.com/yndd/ndd-runtime/pkg/logging"
 	networkv1alpha1 "github.com/yndd/ndda-network/apis/network/v1alpha1"
 	vpcv1alpha1 "github.com/yndd/nddo-vpc/apis/vpc/v1alpha1"
-	"github.com/yndd/nddo-vpc/internal/handler"
+	"github.com/yndd/nddo-vpc/internal/speedyhandler"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
@@ -42,7 +41,7 @@ type EnqueueRequestForAllNddaInterfaces struct {
 	log    logging.Logger
 	ctx    context.Context
 
-	handler handler.Handler
+	speedyHandler speedyhandler.Handler
 
 	newVpcList func() vpcv1alpha1.VpList
 }
@@ -69,7 +68,7 @@ func (e *EnqueueRequestForAllNddaInterfaces) Generic(evt event.GenericEvent, q w
 }
 
 func (e *EnqueueRequestForAllNddaInterfaces) add(obj runtime.Object, queue adder) {
-	dd, ok := obj.(*networkv1alpha1.Interface)
+	dd, ok := obj.(*networkv1alpha1.NetworkInterface)
 	if !ok {
 		return
 	}
@@ -89,7 +88,7 @@ func (e *EnqueueRequestForAllNddaInterfaces) add(obj runtime.Object, queue adder
 		if vpc.GetNamespace() == dd.GetNamespace() {
 
 			crName := getCrName(vpc)
-			e.handler.ResetSpeedy(crName)
+			e.speedyHandler.ResetSpeedy(crName)
 
 			queue.Add(reconcile.Request{NamespacedName: types.NamespacedName{
 				Namespace: vpc.GetNamespace(),
@@ -97,4 +96,3 @@ func (e *EnqueueRequestForAllNddaInterfaces) add(obj runtime.Object, queue adder
 		}
 	}
 }
-*/
