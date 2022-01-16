@@ -12,7 +12,7 @@ import (
 	networkv1alpha1 "github.com/yndd/ndda-network/apis/network/v1alpha1"
 	"github.com/yndd/ndda-network/pkg/ndda/itfceinfo"
 	"github.com/yndd/ndda-network/pkg/ndda/niinfo"
-	networknetworkschemav1alpha1 "github.com/yndd/ndda-network/pkg/networkschema/v1alpha1"
+	networkschemav1alpha1 "github.com/yndd/ndda-network/pkg/networkschema/v1alpha1"
 	nddov1 "github.com/yndd/nddo-runtime/apis/common/v1"
 	"github.com/yndd/nddo-runtime/pkg/resource"
 )
@@ -23,7 +23,7 @@ func (r *application) PopulateSchema(ctx context.Context, mg resource.Managed, d
 
 	d := s.NewDevice(r.client, deviceName)
 
-	i := d.NewInterface(r.client, networknetworkschemav1alpha1.WithInterfaceKey(&networknetworkschemav1alpha1.InterfaceKey{
+	i := d.NewInterface(r.client, networkschemav1alpha1.WithInterfaceKey(&networkschemav1alpha1.InterfaceKey{
 		Name: itfceInfo.GetItfceName(),
 	}))
 
@@ -52,7 +52,7 @@ func (r *application) PopulateSchema(ctx context.Context, mg resource.Managed, d
 	case networkv1alpha1.E_InterfaceKind_INTERFACE:
 		index := strconv.Itoa(int(itfceInfo.GetOuterVlanId()))
 		niItfceSubItfceName = strings.Join([]string{itfceInfo.GetItfceName(), index}, ".")
-		si := i.NewInterfaceSubinterface(r.client, networknetworkschemav1alpha1.WithInterfaceSubinterfaceKey(&networknetworkschemav1alpha1.InterfaceSubinterfaceKey{
+		si := i.NewInterfaceSubinterface(r.client, networkschemav1alpha1.WithInterfaceSubinterfaceKey(&networkschemav1alpha1.InterfaceSubinterfaceKey{
 			Index: index,
 		}))
 		si.Update(&networkv1alpha1.InterfaceSubinterface{
@@ -70,7 +70,7 @@ func (r *application) PopulateSchema(ctx context.Context, mg resource.Managed, d
 	case networkv1alpha1.E_InterfaceKind_IRB, networkv1alpha1.E_InterfaceKind_VXLAN:
 		index := strconv.Itoa(int(*niInfo.Index))
 		niItfceSubItfceName = strings.Join([]string{itfceInfo.GetItfceName(), index}, ".")
-		si := i.NewInterfaceSubinterface(r.client, networknetworkschemav1alpha1.WithInterfaceSubinterfaceKey(&networknetworkschemav1alpha1.InterfaceSubinterfaceKey{
+		si := i.NewInterfaceSubinterface(r.client, networkschemav1alpha1.WithInterfaceSubinterfaceKey(&networkschemav1alpha1.InterfaceSubinterfaceKey{
 			Index: index,
 		}))
 		si.Update(&networkv1alpha1.InterfaceSubinterface{
@@ -88,7 +88,7 @@ func (r *application) PopulateSchema(ctx context.Context, mg resource.Managed, d
 	}
 	niName := strings.Join([]string{*niInfo.Name, string(niInfo.Kind)}, "-")
 
-	ni := d.NewNetworkInstance(r.client, networknetworkschemav1alpha1.WithNetworkInstanceKey(&networknetworkschemav1alpha1.NetworkInstanceKey{
+	ni := d.NewNetworkInstance(r.client, networkschemav1alpha1.WithNetworkInstanceKey(&networkschemav1alpha1.NetworkInstanceKey{
 		Name: niName,
 	}))
 
