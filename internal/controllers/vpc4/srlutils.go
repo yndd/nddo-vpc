@@ -119,19 +119,6 @@ func (r *application) PopulateSchema(ctx context.Context, mg resource.Managed, d
 		*/
 		si := i.GetOrCreateSubinterface(uint32(itfceInfo.GetOuterVlanId()))
 		if niInfo.GetNiKind() == networkv1alpha1.E_NetworkInstanceKind_BRIDGED {
-			/*
-				si.Update(&srlv1alpha1.InterfaceSubinterface{
-					Index: utils.Uint32Ptr(uint32(index)),
-					Type:  utils.StringPtr("bridged"),
-					Vlan: &srlv1alpha1.InterfaceSubinterfaceVlan{
-						Encap: &srlv1alpha1.InterfaceSubinterfaceVlanEncap{
-							Singletagged: &srlv1alpha1.InterfaceSubinterfaceVlanEncapSingletagged{
-								Vlanid: utils.StringPtr(strIndex),
-							},
-						},
-					},
-				})
-			*/
 			si.Type = ygotsrl.SrlNokiaInterfaces_SiType_bridged
 			si.Vlan = &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Vlan{
 				Encap: &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Vlan_Encap{
@@ -169,46 +156,56 @@ func (r *application) PopulateSchema(ctx context.Context, mg resource.Managed, d
 			for _, a := range ipv4.Address {
 				a.AnycastGw = ygot.Bool(true)
 			}
-			ipv4.Arp = &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp{
-				LearnUnsolicited: ygot.Bool(true),
-				HostRoute: &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute{
-					Populate: map[ygotsrl.E_SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType]*ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate{
-						ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType_dynamic: {
-							RouteType: ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType_dynamic,
+			ipv4.GetOrCreateArp().LearnUnsolicited = ygot.Bool(true)
+			ipv4.Arp.GetOrCreateHostRoute().GetOrCreatePopulate(ygotsrl.E_SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType(ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType_dynamic))
+			ipv4.Arp.GetOrCreateEvpn().GetOrCreateAdvertise(ygotsrl.E_SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType(ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType_dynamic))
+
+			/*
+				ipv4.Arp = &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp{
+					LearnUnsolicited: ygot.Bool(true),
+					HostRoute: &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute{
+						Populate: map[ygotsrl.E_SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType]*ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate{
+							ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType_dynamic: {
+								RouteType: ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType_dynamic,
+							},
 						},
 					},
-				},
-				Evpn: &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn{
-					//Advertise: map[ygotsrl.E_SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType]*ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise{
-					//	ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType_dynamic: {
-					//		RouteType: ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType_dynamic,
-					//	},
-					//},
-				},
-			}
-			ipv6.NeighborDiscovery = &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_NeighborDiscovery{
-				LearnUnsolicited: ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_NeighborDiscovery_LearnUnsolicited_global,
-				HostRoute: &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_NeighborDiscovery_HostRoute{
-					Populate: map[ygotsrl.E_SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType]*ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_NeighborDiscovery_HostRoute_Populate{
-						ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType_dynamic: {
-							RouteType: ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType_dynamic,
+					Evpn: &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn{
+						//Advertise: map[ygotsrl.E_SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType]*ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise{
+						//	ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType_dynamic: {
+						//		RouteType: ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType_dynamic,
+						//	},
+						//},
+					},
+				}
+			*/
+			ipv6.GetOrCreateNeighborDiscovery().LearnUnsolicited = ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_NeighborDiscovery_LearnUnsolicited_global
+			ipv6.NeighborDiscovery.GetOrCreateHostRoute().GetOrCreatePopulate(ygotsrl.E_SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType(ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType_dynamic))
+			ipv6.NeighborDiscovery.GetOrCreateEvpn().GetOrCreateAdvertise(ygotsrl.E_SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType(ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType_dynamic))
+
+			/*
+				ipv6.NeighborDiscovery = &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_NeighborDiscovery{
+					LearnUnsolicited: ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_NeighborDiscovery_LearnUnsolicited_global,
+					HostRoute: &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_NeighborDiscovery_HostRoute{
+						Populate: map[ygotsrl.E_SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType]*ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_NeighborDiscovery_HostRoute_Populate{
+							ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType_dynamic: {
+								RouteType: ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType_dynamic,
+							},
 						},
 					},
-				},
-				Evpn: &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_NeighborDiscovery_Evpn{
-					//Advertise: map[ygotsrl.E_SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType]*ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_NeighborDiscovery_Evpn_Advertise{
-					//	ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType_static: {
-					//		RouteType: ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType_dynamic,
-					//	},
-					//},
-				},
-			}
+					Evpn: &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_NeighborDiscovery_Evpn{
+						//Advertise: map[ygotsrl.E_SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType]*ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_NeighborDiscovery_Evpn_Advertise{
+						//	ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType_static: {
+						//		RouteType: ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType_dynamic,
+						//	},
+						//},
+					},
+				}
+			*/
 			//si.Type = ygotsrl.SrlNokiaInterfaces_SiType_routed
 			si.Ipv4 = ipv4
 			si.Ipv6 = ipv6
-			si.AnycastGw = &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_AnycastGw{
-				VirtualRouterId: ygot.Uint8(1),
-			}
+			si.GetOrCreateAnycastGw().VirtualRouterId = ygot.Uint8(1)
 		}
 
 		// add subinterface to network instance
