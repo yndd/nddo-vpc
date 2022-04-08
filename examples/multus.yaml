@@ -16,28 +16,28 @@ spec:
       - tag:
         - {key: kind, value: epg}
         - {key: endpoint-group, value: server-pod1}
-        - {key: itfce-kind, value: ipvlan}          
+        - {key: itfce-kind, value: ipvlan}
         outer-vlan-id: 100
     - name: multus-sriov1
       interface-selector:
-      - tag: 
+      - tag:
         - {key: kind, value: epg}
         - {key: endpoint-group, value: server-pod1}
-        - {key: itfce-kind, value: sriov1}  
+        - {key: itfce-kind, value: sriov1}
         outer-vlan-id: 101
     - name: multus-sriov2
       interface-selector:
-      - tag: 
+      - tag:
         - {key: kind, value: epg}
         - {key: endpoint-group, value: server-pod1}
-        - {key: itfce-kind, value: sriov2}  
+        - {key: itfce-kind, value: sriov2}
         outer-vlan-id: 102
     routing-tables:
-    - name: mutlus
+    - name: multus
       bridge-domains:
       - name: multus-ipvlan
-        ipv4-prefixes: [100.112.1.0/24]
-        ipv6-prefixes: [2a02:1800:81:7000::/64]
+        ipv4-prefixes: [100.112.1.3/24]
+        ipv6-prefixes: [2a02:1800:81:8000::/64]
       - name: multus-sriov1
         ipv4-prefixes: [100.112.2.0/24]
         ipv6-prefixes: [2a02:1800:82:7000::/64]
@@ -45,17 +45,15 @@ spec:
         ipv4-prefixes: [100.112.3.0/24]
         ipv6-prefixes: [2a02:1800:83:7000::/64]
       interface-selector:
-      - tag: 
+      - tag:
         - {key: kind, value: node-itfce}
         - {key: leaf1, value: int-1/1/48}
         ipv4-prefixes: [100.112.10.1/31]
         ipv6-prefixes: [2a02:1800:80:7050::1/64]
         outer-vlan-id: 100
-      - tag: 
+      - tag:
         - {key: kind, value: node-itfce}
         - {key: leaf2, value: int-1/1/48}
         ipv4-prefixes: [100.112.10.3/31]
         ipv6-prefixes: [2a02:1800:80:7050::3/64]
         outer-vlan-id: 110
-    
-  

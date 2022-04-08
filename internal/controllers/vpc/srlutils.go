@@ -14,10 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package vpc4
+package vpc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/big"
 	"net"
@@ -30,14 +31,22 @@ import (
 	"github.com/yndd/ndda-network/pkg/ndda/niinfo"
 	nddov1 "github.com/yndd/nddo-runtime/apis/common/v1"
 	"github.com/yndd/nddo-runtime/pkg/resource"
+	intentsrl3v1alpha1 "github.com/yndd/nddp-srl3/pkg/intent/srl3/v1alpha1"
 	"github.com/yndd/nddp-srl3/pkg/ygotsrl"
 )
 
 func (r *application) PopulateSchema(ctx context.Context, mg resource.Managed, deviceName string, itfceInfo itfceinfo.ItfceInfo, niInfo *niinfo.NiInfo, addressAllocationStrategy *nddov1.AddressAllocationStrategy) error {
 	crName := getCrName(mg)
-	s := r.srlHandler.Init(crName)
+	s := r.intents[crName]
 
-	d := s.NewDevice(r.client, deviceName).Get()
+	//d := s.NewDevice(r.client, deviceName).Get()
+
+	s.AddChild(deviceName, intentsrl3v1alpha1.InitSrl(r.client, s, deviceName))
+	srld := s.GetChildData(deviceName)
+	d, ok := srld.(*ygotsrl.Device)
+	if !ok {
+		return errors.New("expected ygot struct")
+	}
 
 	niName := niInfo.GetNiName()
 
@@ -160,48 +169,10 @@ func (r *application) PopulateSchema(ctx context.Context, mg resource.Managed, d
 			ipv4.Arp.GetOrCreateHostRoute().GetOrCreatePopulate(ygotsrl.E_SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType(ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType_dynamic))
 			ipv4.Arp.GetOrCreateEvpn().GetOrCreateAdvertise(ygotsrl.E_SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType(ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType_dynamic))
 
-			/*
-				ipv4.Arp = &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp{
-					LearnUnsolicited: ygot.Bool(true),
-					HostRoute: &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute{
-						Populate: map[ygotsrl.E_SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType]*ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate{
-							ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType_dynamic: {
-								RouteType: ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType_dynamic,
-							},
-						},
-					},
-					Evpn: &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn{
-						//Advertise: map[ygotsrl.E_SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType]*ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise{
-						//	ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType_dynamic: {
-						//		RouteType: ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType_dynamic,
-						//	},
-						//},
-					},
-				}
-			*/
 			ipv6.GetOrCreateNeighborDiscovery().LearnUnsolicited = ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_NeighborDiscovery_LearnUnsolicited_global
 			ipv6.NeighborDiscovery.GetOrCreateHostRoute().GetOrCreatePopulate(ygotsrl.E_SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType(ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType_dynamic))
 			ipv6.NeighborDiscovery.GetOrCreateEvpn().GetOrCreateAdvertise(ygotsrl.E_SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType(ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType_dynamic))
 
-			/*
-				ipv6.NeighborDiscovery = &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_NeighborDiscovery{
-					LearnUnsolicited: ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_NeighborDiscovery_LearnUnsolicited_global,
-					HostRoute: &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_NeighborDiscovery_HostRoute{
-						Populate: map[ygotsrl.E_SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType]*ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_NeighborDiscovery_HostRoute_Populate{
-							ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType_dynamic: {
-								RouteType: ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_HostRoute_Populate_RouteType_dynamic,
-							},
-						},
-					},
-					Evpn: &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_NeighborDiscovery_Evpn{
-						//Advertise: map[ygotsrl.E_SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType]*ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_NeighborDiscovery_Evpn_Advertise{
-						//	ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType_static: {
-						//		RouteType: ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Arp_Evpn_Advertise_RouteType_dynamic,
-						//	},
-						//},
-					},
-				}
-			*/
 			//si.Type = ygotsrl.SrlNokiaInterfaces_SiType_routed
 			si.Ipv4 = ipv4
 			si.Ipv6 = ipv6
@@ -260,11 +231,6 @@ func getIPv4Info(prefixes []*string, addressAllocation *nddov1.AddressAllocation
 				a[strings.Join([]string{ipAddr.String(), strconv.Itoa(ipMask)}, "/")] = &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Address{
 					IpPrefix: ygot.String(strings.Join([]string{ipAddr.String(), strconv.Itoa(ipMask)}, "/")),
 				}
-				/*
-					a = append(a, &srlv1alpha1.InterfaceSubinterfaceIpv4Address{
-						Ipprefix: utils.StringPtr(strings.Join([]string{ipAddr.String(), strconv.Itoa(ipMask)}, "/")),
-					})
-				*/
 			default:
 				//case nddov1.GatewayAllocationFirst:
 				ipAddr, err := GetFirstIP(n)
@@ -274,65 +240,15 @@ func getIPv4Info(prefixes []*string, addressAllocation *nddov1.AddressAllocation
 				a[strings.Join([]string{ipAddr.String(), strconv.Itoa(ipMask)}, "/")] = &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Address{
 					IpPrefix: ygot.String(strings.Join([]string{ipAddr.String(), strconv.Itoa(ipMask)}, "/")),
 				}
-				/*
-					a = append(a, &srlv1alpha1.InterfaceSubinterfaceIpv4Address{
-						Ipprefix: utils.StringPtr(strings.Join([]string{ipAddr.String(), strconv.Itoa(ipMask)}, "/")),
-					})
-				*/
 			}
 		} else {
 			a[*prefix] = &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv4_Address{
 				IpPrefix: ygot.String(*prefix),
 			}
-			/*
-				a = append(a, &srlv1alpha1.InterfaceSubinterfaceIpv4Address{
-					Ipprefix: prefix,
-				})
-			*/
 		}
 	}
 	return a, nil
 }
-
-/*
-func getIPv4Info(prefixes []*string, addressAllocation *nddov1.AddressAllocationStrategy) ([]*srlv1alpha1.InterfaceSubinterfaceIpv4Address, error) {
-	a := make([]*srlv1alpha1.InterfaceSubinterfaceIpv4Address, 0)
-	for _, prefix := range prefixes {
-		ip, n, err := net.ParseCIDR(*prefix)
-		if err != nil {
-			return nil, err
-		}
-		ipMask, _ := n.Mask.Size()
-		if ip.String() == n.IP.String() && ipMask != 31 {
-			// none /31 interface -> allocate gw IP
-			switch addressAllocation.GetGatewayAllocation() {
-			case nddov1.GatewayAllocationLast.String():
-				ipAddr, err := GetLastIP(n)
-				if err != nil {
-					return nil, err
-				}
-				a = append(a, &srlv1alpha1.InterfaceSubinterfaceIpv4Address{
-					Ipprefix: utils.StringPtr(strings.Join([]string{ipAddr.String(), strconv.Itoa(ipMask)}, "/")),
-				})
-			default:
-				//case nddov1.GatewayAllocationFirst:
-				ipAddr, err := GetFirstIP(n)
-				if err != nil {
-					return nil, err
-				}
-				a = append(a, &srlv1alpha1.InterfaceSubinterfaceIpv4Address{
-					Ipprefix: utils.StringPtr(strings.Join([]string{ipAddr.String(), strconv.Itoa(ipMask)}, "/")),
-				})
-			}
-		} else {
-			a = append(a, &srlv1alpha1.InterfaceSubinterfaceIpv4Address{
-				Ipprefix: prefix,
-			})
-		}
-	}
-	return a, nil
-}
-*/
 
 func getIPv6Info(prefixes []*string, addressAllocation *nddov1.AddressAllocationStrategy) (map[string]*ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_Address, error) {
 	a := make(map[string]*ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_Address)
@@ -353,11 +269,6 @@ func getIPv6Info(prefixes []*string, addressAllocation *nddov1.AddressAllocation
 				a[strings.Join([]string{ipAddr.String(), strconv.Itoa(ipMask)}, "/")] = &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_Address{
 					IpPrefix: ygot.String(strings.Join([]string{ipAddr.String(), strconv.Itoa(ipMask)}, "/")),
 				}
-				/*
-					a = append(a, &srlv1alpha1.InterfaceSubinterfaceIpv6Address{
-						Ipprefix: utils.StringPtr(strings.Join([]string{ipAddr.String(), strconv.Itoa(ipMask)}, "/")),
-					})
-				*/
 			default:
 				//case nddov1.GatewayAllocationFirst:
 				ipAddr, err := GetFirstIP(n)
@@ -367,18 +278,8 @@ func getIPv6Info(prefixes []*string, addressAllocation *nddov1.AddressAllocation
 				a[strings.Join([]string{ipAddr.String(), strconv.Itoa(ipMask)}, "/")] = &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_Address{
 					IpPrefix: ygot.String(strings.Join([]string{ipAddr.String(), strconv.Itoa(ipMask)}, "/")),
 				}
-				/*
-					a = append(a, &srlv1alpha1.InterfaceSubinterfaceIpv6Address{
-						Ipprefix: utils.StringPtr(strings.Join([]string{ipAddr.String(), strconv.Itoa(ipMask)}, "/")),
-					})
-				*/
 			}
 		} else {
-			/*
-				a = append(a, &srlv1alpha1.InterfaceSubinterfaceIpv6Address{
-					Ipprefix: prefix,
-				})
-			*/
 			a[*prefix] = &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Ipv6_Address{
 				IpPrefix: ygot.String(*prefix),
 			}
@@ -386,46 +287,6 @@ func getIPv6Info(prefixes []*string, addressAllocation *nddov1.AddressAllocation
 	}
 	return a, nil
 }
-
-/*
-func getIPv6Info(prefixes []*string, addressAllocation *nddov1.AddressAllocationStrategy) ([]*srlv1alpha1.InterfaceSubinterfaceIpv6Address, error) {
-	a := make([]*srlv1alpha1.InterfaceSubinterfaceIpv6Address, 0)
-	for _, prefix := range prefixes {
-		ip, n, err := net.ParseCIDR(*prefix)
-		if err != nil {
-			return nil, err
-		}
-		ipMask, _ := n.Mask.Size()
-		if ip.String() == n.IP.String() && ipMask != 127 {
-			// none /127 interface -> allocate gw IP
-			switch addressAllocation.GetGatewayAllocation() {
-			case nddov1.GatewayAllocationLast.String():
-				ipAddr, err := GetLastIP(n)
-				if err != nil {
-					return nil, err
-				}
-				a = append(a, &srlv1alpha1.InterfaceSubinterfaceIpv6Address{
-					Ipprefix: utils.StringPtr(strings.Join([]string{ipAddr.String(), strconv.Itoa(ipMask)}, "/")),
-				})
-			default:
-				//case nddov1.GatewayAllocationFirst:
-				ipAddr, err := GetFirstIP(n)
-				if err != nil {
-					return nil, err
-				}
-				a = append(a, &srlv1alpha1.InterfaceSubinterfaceIpv6Address{
-					Ipprefix: utils.StringPtr(strings.Join([]string{ipAddr.String(), strconv.Itoa(ipMask)}, "/")),
-				})
-			}
-		} else {
-			a = append(a, &srlv1alpha1.InterfaceSubinterfaceIpv6Address{
-				Ipprefix: prefix,
-			})
-		}
-	}
-	return a, nil
-}
-*/
 
 // GetLastIP returns subnet's last IP
 func GetLastIP(subnet *net.IPNet) (net.IP, error) {

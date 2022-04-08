@@ -14,17 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package vpc2
+package vpc
 
-/*
 import (
 	"context"
 
 	//ndddvrv1 "github.com/yndd/ndd-core/apis/dvr/v1"
 	"github.com/yndd/ndd-runtime/pkg/logging"
-	networkv1alpha1 "github.com/yndd/ndda-network/apis/network/v1alpha1"
 	vpcv1alpha1 "github.com/yndd/nddo-vpc/apis/vpc/v1alpha1"
-	"github.com/yndd/nddo-vpc/internal/handler"
+	"github.com/yndd/nddo-vpc/internal/speedyhandler"
+	srlv1alpha1 "github.com/yndd/nddp-srl3/apis/srl3/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
@@ -37,39 +36,39 @@ type adder interface {
 	Add(item interface{})
 }
 
-type EnqueueRequestForAllNddaInterfaces struct {
+type EnqueueRequestForAllNddpSrlDevices struct {
 	client client.Client
 	log    logging.Logger
 	ctx    context.Context
 
-	handler handler.Handler
+	speedyHandler speedyhandler.Handler
 
 	newVpcList func() vpcv1alpha1.VpList
 }
 
 // Create enqueues a request for all vpcs which pertains to the topology.
-func (e *EnqueueRequestForAllNddaInterfaces) Create(evt event.CreateEvent, q workqueue.RateLimitingInterface) {
+func (e *EnqueueRequestForAllNddpSrlDevices) Create(evt event.CreateEvent, q workqueue.RateLimitingInterface) {
 	e.add(evt.Object, q)
 }
 
 // Create enqueues a request for all vpcs which pertains to the topology.
-func (e *EnqueueRequestForAllNddaInterfaces) Update(evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
+func (e *EnqueueRequestForAllNddpSrlDevices) Update(evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
 	e.add(evt.ObjectOld, q)
 	e.add(evt.ObjectNew, q)
 }
 
 // Create enqueues a request for all vpcs which pertains to the topology.
-func (e *EnqueueRequestForAllNddaInterfaces) Delete(evt event.DeleteEvent, q workqueue.RateLimitingInterface) {
+func (e *EnqueueRequestForAllNddpSrlDevices) Delete(evt event.DeleteEvent, q workqueue.RateLimitingInterface) {
 	e.add(evt.Object, q)
 }
 
 // Create enqueues a request for all vpcs which pertains to the topology.
-func (e *EnqueueRequestForAllNddaInterfaces) Generic(evt event.GenericEvent, q workqueue.RateLimitingInterface) {
+func (e *EnqueueRequestForAllNddpSrlDevices) Generic(evt event.GenericEvent, q workqueue.RateLimitingInterface) {
 	e.add(evt.Object, q)
 }
 
-func (e *EnqueueRequestForAllNddaInterfaces) add(obj runtime.Object, queue adder) {
-	dd, ok := obj.(*networkv1alpha1.Interface)
+func (e *EnqueueRequestForAllNddpSrlDevices) add(obj runtime.Object, queue adder) {
+	dd, ok := obj.(*srlv1alpha1.Srl3Device)
 	if !ok {
 		return
 	}
@@ -89,7 +88,7 @@ func (e *EnqueueRequestForAllNddaInterfaces) add(obj runtime.Object, queue adder
 		if vpc.GetNamespace() == dd.GetNamespace() {
 
 			crName := getCrName(vpc)
-			e.handler.ResetSpeedy(crName)
+			e.speedyHandler.ResetSpeedy(crName)
 
 			queue.Add(reconcile.Request{NamespacedName: types.NamespacedName{
 				Namespace: vpc.GetNamespace(),
@@ -97,4 +96,3 @@ func (e *EnqueueRequestForAllNddaInterfaces) add(obj runtime.Object, queue adder
 		}
 	}
 }
-*/

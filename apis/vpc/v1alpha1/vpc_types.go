@@ -103,6 +103,7 @@ type VpcStatus struct {
 // +kubebuilder:printcolumn:name="AZ",type="string",JSONPath=".status.oda[?(@.key=='availability-zone')].value"
 // +kubebuilder:printcolumn:name="VPC",type="string",JSONPath=".status.vpc-name"
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:resource:categories={ndd,nddo}
 type Vpc struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
