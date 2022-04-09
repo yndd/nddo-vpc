@@ -18,7 +18,6 @@ package vpc
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/big"
 	"net"
@@ -26,32 +25,178 @@ import (
 	"strings"
 
 	"github.com/openconfig/ygot/ygot"
-	networkv1alpha1 "github.com/yndd/ndda-network/apis/network/v1alpha1"
+	"github.com/pkg/errors"
 	"github.com/yndd/ndda-network/pkg/ndda/itfceinfo"
 	"github.com/yndd/ndda-network/pkg/ndda/niinfo"
+	"github.com/yndd/ndda-network/pkg/ygotndda"
 	nddov1 "github.com/yndd/nddo-runtime/apis/common/v1"
+	v1 "github.com/yndd/nddo-runtime/apis/common/v1"
 	"github.com/yndd/nddo-runtime/pkg/resource"
+	vpcv1alpha1 "github.com/yndd/nddo-vpc/apis/vpc/v1alpha1"
+	abstractionsrl3v1alpha1 "github.com/yndd/nddp-srl3/pkg/abstraction/srl3/v1alpha1"
 	intentsrl3v1alpha1 "github.com/yndd/nddp-srl3/pkg/intent/srl3/v1alpha1"
 	"github.com/yndd/nddp-srl3/pkg/ygotsrl"
 )
 
-func (r *application) PopulateSchema(ctx context.Context, mg resource.Managed, deviceName string, itfceInfo itfceinfo.ItfceInfo, niInfo *niinfo.NiInfo, addressAllocationStrategy *nddov1.AddressAllocationStrategy) error {
+func (r *application) srlPopulateBridgeDomain(ctx context.Context, mg resource.Managed, bdName string, n *nodeInfo, niInfo *niinfo.NiInfo, epgSelectors []*v1.EpgInfo, nodeItfceSelectors map[string]*v1.ItfceInfo, addressAllocationStrategy *nddov1.AddressAllocationStrategy) error {
+	log := r.log.WithValues("crName", getCrName(mg), "nodeInfo", *n, "bdName", bdName)
+	log.Debug("srlPopulateBridgeDomain...")
+	fmt.Printf("srlPopulateBridgeDomain: nodeInfo: %#v\n", *n)
+	cr, ok := mg.(*vpcv1alpha1.Vpc)
+	if !ok {
+		return errors.New(errUnexpectedResource)
+	}
+
+	selectedItfces, err := r.srlGetInterfaces(ctx, mg, n, epgSelectors, nodeItfceSelectors)
+	if err != nil {
+		return err
+	}
+	for itfceName, itfceInfo := range selectedItfces {
+		fmt.Printf("srlPopulateBridgeDomain: itfceName: %s nodeInfo: %#v itfceInfo: %#v\n", itfceName, *n, itfceInfo)
+		if err := r.srlPopulateSchema(ctx, mg, n, itfceInfo, niInfo, addressAllocationStrategy); err != nil {
+			return err
+		}
+	}
+	// if the node has interfaces we also need to add the vxlan tunnel if interfaces were selected on the device
+	if len(selectedItfces) > 0 {
+		// if the tunnel mechanism in the bridge domin is vxlan add the vxlan interface
+		if cr.GetBridgeDomainTunnel(bdName) == vpcv1alpha1.TunnelVxlan.String() {
+			itfceInfo := itfceinfo.NewItfceInfo(
+				itfceinfo.WithItfceName("vxlan0"),
+				itfceinfo.WithItfceKind(ygotndda.NddaCommon_InterfaceKind_VXLAN),
+			)
+			if err := r.srlPopulateSchema(ctx, mg, n, itfceInfo, niInfo, addressAllocationStrategy); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (r *application) srlPopulateRouteTable(ctx context.Context, mg resource.Managed, rtName string, n *nodeInfo, niInfo *niinfo.NiInfo, epgSelectors []*v1.EpgInfo, nodeItfceSelectors map[string]*v1.ItfceInfo, addressAllocationStrategy *nddov1.AddressAllocationStrategy) error {
+	cr, ok := mg.(*vpcv1alpha1.Vpc)
+	if !ok {
+		return errors.New(errUnexpectedResource)
+	}
+
+	selectedItfces, err := r.srlGetInterfaces(ctx, mg, n, epgSelectors, nodeItfceSelectors)
+	if err != nil {
+		return err
+	}
+	for _, itfceInfo := range selectedItfces {
+		if err := r.srlPopulateSchema(ctx, mg, n, itfceInfo, niInfo, addressAllocationStrategy); err != nil {
+			return err
+		}
+	}
+	// if the node has interfaces we also need to add the vxlan tunnel if interfaces were selected on the device
+	if len(selectedItfces) > 0 {
+		// if the tunnel mechanism in the bridge domin is vxlan add the vxlan interface
+		if cr.GetRoutingTableTunnel(rtName) == vpcv1alpha1.TunnelVxlan.String() {
+			itfceInfo := itfceinfo.NewItfceInfo(
+				itfceinfo.WithItfceName("vxlan0"),
+				itfceinfo.WithItfceKind(ygotndda.NddaCommon_InterfaceKind_VXLAN),
+			)
+			if err := r.srlPopulateSchema(ctx, mg, n, itfceInfo, niInfo, addressAllocationStrategy); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (r *application) srlPopulateRouteIrb(ctx context.Context, mg resource.Managed, bdName, rtName string, n *nodeInfo, niInfos map[string]*niinfo.NiInfo, epgSelectors []*v1.EpgInfo, nodeItfceSelectors map[string]*v1.ItfceInfo, addressAllocationStrategy *nddov1.AddressAllocationStrategy, bd *vpcv1alpha1.VpcVpcRoutingTablesBridgeDomains) error {
+	cr, ok := mg.(*vpcv1alpha1.Vpc)
+	if !ok {
+		return errors.New(errUnexpectedResource)
+	}
+
+	selectedItfces, err := r.srlGetInterfaces(ctx, mg, n, epgSelectors, nodeItfceSelectors)
+	if err != nil {
+		return err
+	}
+	// if the node has interfaces we also need to add the vxlan tunnel if interfaces were selected on the device
+	if len(selectedItfces) > 0 {
+		niInfo := niInfos[niinfo.GetBdName(bdName)]
+
+		itfceInfo := itfceinfo.NewItfceInfo(
+			itfceinfo.WithItfceName("irb0"),
+			itfceinfo.WithItfceKind(ygotndda.NddaCommon_InterfaceKind_IRB),
+		)
+		if err := r.srlPopulateSchema(ctx, mg, n, itfceInfo, niInfo, addressAllocationStrategy); err != nil {
+			return err
+		}
+
+		// if the tunnel mechanism in the bridge domin is vxlan add the vxlan interface
+		if cr.GetBridgeDomainTunnel(bdName) == vpcv1alpha1.TunnelVxlan.String() {
+			itfceInfo := itfceinfo.NewItfceInfo(
+				itfceinfo.WithItfceName("vxlan0"),
+				itfceinfo.WithItfceKind(ygotndda.NddaCommon_InterfaceKind_VXLAN),
+			)
+			if err := r.srlPopulateSchema(ctx, mg, n, itfceInfo, niInfo, addressAllocationStrategy); err != nil {
+				return err
+			}
+		}
+
+		itfceInfo.SetIpv4Prefixes(bd.GetIPv4Prefixes())
+		itfceInfo.SetIpv6Prefixes(bd.GetIPv6Prefixes())
+
+		niInfo = niInfos[niinfo.GetRtName(rtName)]
+
+		if err := r.srlPopulateSchema(ctx, mg, n, itfceInfo, niInfo, addressAllocationStrategy); err != nil {
+			return err
+		}
+
+		// add vxlan in rt table
+		if cr.GetRoutingTableTunnel(rtName) == vpcv1alpha1.TunnelVxlan.String() {
+			itfceInfo := itfceinfo.NewItfceInfo(
+				itfceinfo.WithItfceName("vxlan0"),
+				itfceinfo.WithItfceKind(ygotndda.NddaCommon_InterfaceKind_VXLAN),
+			)
+			if err := r.srlPopulateSchema(ctx, mg, n, itfceInfo, niInfo, addressAllocationStrategy); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (r *application) srlGetInterfaces(ctx context.Context, mg resource.Managed, n *nodeInfo, epgSelectors []*v1.EpgInfo, nodeItfceSelectors map[string]*v1.ItfceInfo) (map[string]itfceinfo.ItfceInfo, error) {
 	crName := getCrName(mg)
-	s := r.intents[crName]
+	deviceName := n.name
 
-	//d := s.NewDevice(r.client, deviceName).Get()
+	r.abstractions[crName].AddChild(deviceName, abstractionsrl3v1alpha1.InitSrl(r.client, deviceName, n.platform))
+	a, err := r.abstractions[crName].GetChild(deviceName)
+	if err != nil {
+		return nil, err
+	}
 
-	s.AddChild(deviceName, intentsrl3v1alpha1.InitSrl(r.client, s, deviceName))
-	srld := s.GetChildData(deviceName)
+	return a.GetSelectedItfces(ctx, mg, deviceName, epgSelectors, nodeItfceSelectors)
+}
+
+func (r *application) srlPopulateSchema(ctx context.Context, mg resource.Managed, n *nodeInfo, itfceInfo itfceinfo.ItfceInfo, niInfo *niinfo.NiInfo, addressAllocationStrategy *nddov1.AddressAllocationStrategy) error {
+	deviceName := n.name
+
+	crName := getCrName(mg)
+	ci := r.intents[crName]
+
+	ci.AddChild(deviceName, intentsrl3v1alpha1.InitSrl(r.client, ci, deviceName))
+	srld := ci.GetChildData(deviceName)
 	d, ok := srld.(*ygotsrl.Device)
 	if !ok {
 		return errors.New("expected ygot struct")
 	}
+	/*
+		r.abstractions[crName].AddChild(deviceName, abstractionsrl3v1alpha1.InitSrl(r.client, deviceName, n.platform))
+		a, err := r.abstractions[crName].GetChild(deviceName)
+		if err != nil {
+			return err
+		}
+	*/
 
 	niName := niInfo.GetNiName()
 
 	ni := d.GetOrCreateNetworkInstance(niName)
-	if niInfo.GetNiKind() == networkv1alpha1.E_NetworkInstanceKind_BRIDGED {
+	if niInfo.GetNiKind() == ygotndda.NddaCommon_NiKind_BRIDGED {
 		ni.Type = ygotsrl.SrlNokiaNetworkInstance_NiType_mac_vrf
 		ni.BridgeTable = &ygotsrl.SrlNokiaNetworkInstance_NetworkInstance_BridgeTable{
 			MacLearning: &ygotsrl.SrlNokiaNetworkInstance_NetworkInstance_BridgeTable_MacLearning{
@@ -79,17 +224,13 @@ func (r *application) PopulateSchema(ctx context.Context, mg resource.Managed, d
 		ExportRt: ygot.String(strings.Join([]string{"target", "65555", strconv.Itoa(int(*niInfo.Index))}, ":")),
 	}
 
-	itfceName := itfceInfo.GetItfceName()
-	if strings.Contains(itfceName, "int-") {
-		itfceName = strings.ReplaceAll(itfceName, "int", "ethernet")
-		split := strings.Split(itfceName, "/")
-		if len(split) > 2 {
-			itfceName = "ethernet-" + split[len(split)-2] + "/" + split[len(split)-1]
+	/*
+		itfceName, err := a.GetInterfaceName(itfceInfo.GetItfceName())
+		if err != nil {
+			return err
 		}
-	}
-	if strings.Contains(itfceName, "lag") {
-		itfceName = strings.ReplaceAll(itfceName, "-", "")
-	}
+	*/
+	itfceName := itfceInfo.GetItfceName()
 
 	// reference interface
 
@@ -116,7 +257,7 @@ func (r *application) PopulateSchema(ctx context.Context, mg resource.Managed, d
 
 	//var niItfceSubItfceName string
 	switch itfceInfo.GetItfceKind() {
-	case networkv1alpha1.E_InterfaceKind_INTERFACE:
+	case ygotndda.NddaCommon_InterfaceKind_INTERFACE:
 		i := d.GetOrCreateInterface(itfceName)
 		strIndex := strconv.Itoa(int(itfceInfo.GetOuterVlanId()))
 		//index := itfceInfo.GetOuterVlanId()
@@ -127,7 +268,7 @@ func (r *application) PopulateSchema(ctx context.Context, mg resource.Managed, d
 			}))
 		*/
 		si := i.GetOrCreateSubinterface(uint32(itfceInfo.GetOuterVlanId()))
-		if niInfo.GetNiKind() == networkv1alpha1.E_NetworkInstanceKind_BRIDGED {
+		if niInfo.GetNiKind() == ygotndda.NddaCommon_NiKind_BRIDGED {
 			si.Type = ygotsrl.SrlNokiaInterfaces_SiType_bridged
 			si.Vlan = &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Vlan{
 				Encap: &ygotsrl.SrlNokiaInterfaces_Interface_Subinterface_Vlan_Encap{
@@ -151,14 +292,14 @@ func (r *application) PopulateSchema(ctx context.Context, mg resource.Managed, d
 		// add subinterface to network instance
 		ni.GetOrCreateInterface(niItfceSubItfceName)
 
-	case networkv1alpha1.E_InterfaceKind_IRB:
+	case ygotndda.NddaCommon_InterfaceKind_IRB:
 		i := d.GetOrCreateInterface(itfceName)
 		strIndex := strconv.Itoa(int(*niInfo.Index))
 		niItfceSubItfceName := strings.Join([]string{itfceName, strIndex}, ".")
 
 		si := i.GetOrCreateSubinterface(*niInfo.Index)
 
-		if niInfo.GetNiKind() == networkv1alpha1.E_NetworkInstanceKind_BRIDGED {
+		if niInfo.GetNiKind() == ygotndda.NddaCommon_NiKind_BRIDGED {
 			//si.Type = ygotsrl.SrlNokiaInterfaces_SiType_bridged
 		} else {
 			fmt.Printf("ni kind: %s\n", niInfo.GetNiKind())
@@ -181,7 +322,7 @@ func (r *application) PopulateSchema(ctx context.Context, mg resource.Managed, d
 
 		// add subinterface to network instance
 		ni.GetOrCreateInterface(niItfceSubItfceName)
-	case networkv1alpha1.E_InterfaceKind_VXLAN:
+	case ygotndda.NddaCommon_InterfaceKind_VXLAN:
 		strIndex := strconv.Itoa(int(*niInfo.Index))
 		niItfceVxlanItfceName := strings.Join([]string{itfceName, strIndex}, ".")
 
@@ -189,7 +330,7 @@ func (r *application) PopulateSchema(ctx context.Context, mg resource.Managed, d
 		ti := d.GetOrCreateTunnelInterface("vxlan0")
 		sti := ti.GetOrCreateVxlanInterface(*niInfo.Index)
 
-		if niInfo.GetNiKind() == networkv1alpha1.E_NetworkInstanceKind_BRIDGED {
+		if niInfo.GetNiKind() == ygotndda.NddaCommon_NiKind_BRIDGED {
 			sti.Type = ygotsrl.SrlNokiaInterfaces_SiType_bridged
 			sti.Ingress = &ygotsrl.SrlNokiaTunnelInterfaces_TunnelInterface_VxlanInterface_Ingress{
 				Vni: ygot.Uint32(*niInfo.Index),

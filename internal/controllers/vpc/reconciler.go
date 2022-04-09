@@ -26,8 +26,11 @@ import (
 	"github.com/yndd/ndd-runtime/pkg/logging"
 	"github.com/yndd/nddo-runtime/pkg/intent"
 
-	networkv1alpha1 "github.com/yndd/ndda-network/apis/network/v1alpha1"
-	"github.com/yndd/ndda-network/pkg/ndda/itfceinfo"
+	//networkv1alpha1 "github.com/yndd/ndda-network/apis/network/v1alpha1"
+
+	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
+	nddpresource "github.com/yndd/ndd-runtime/pkg/resource"
+	"github.com/yndd/ndda-network/pkg/abstraction"
 	"github.com/yndd/ndda-network/pkg/ndda/niinfo"
 	"github.com/yndd/nddo-runtime/pkg/reconciler/managed"
 	"github.com/yndd/nddo-runtime/pkg/resource"
@@ -36,8 +39,8 @@ import (
 	"github.com/yndd/nddo-vpc/internal/shared"
 	"github.com/yndd/nddo-vpc/internal/speedyhandler"
 	srlv1alpha1 "github.com/yndd/nddp-srl3/apis/srl3/v1alpha1"
-	srlndda "github.com/yndd/nddp-srl3/pkg/ndda"
 	"github.com/yndd/nddr-org-registry/pkg/registry"
+	topov1alpha1 "github.com/yndd/nddr-topo-registry/apis/topo/v1alpha1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -58,6 +61,7 @@ func Setup(mgr ctrl.Manager, o controller.Options, nddcopts *shared.NddControlle
 	name := "nddo/" + strings.ToLower(vpcv1alpha1.VpcGroupKind)
 	vpcfn := func() vpcv1alpha1.Vp { return &vpcv1alpha1.Vpc{} }
 	vpclfn := func() vpcv1alpha1.VpList { return &vpcv1alpha1.VpcList{} }
+	tnlfn := func() topov1alpha1.TnList { return &topov1alpha1.TopologyNodeList{} }
 
 	shandler := speedyhandler.New()
 
@@ -69,18 +73,22 @@ func Setup(mgr ctrl.Manager, o controller.Options, nddcopts *shared.NddControlle
 				Client:     mgr.GetClient(),
 				Applicator: resource.NewAPIPatchingApplicator(mgr.GetClient()),
 			},
-			log:        nddcopts.Logger.WithValues("applogic", name),
-			newVpc:     vpcfn,
-			newVpcList: vpclfn,
-			registry: nddcopts.Registry,
-			intents:  make(map[string]*intent.Compositeintent),
-			srlNddaHandler: srlndda.New(
-				srlndda.WithClient(resource.ClientApplicator{
-					Client:     mgr.GetClient(),
-					Applicator: resource.NewAPIPatchingApplicator(mgr.GetClient()),
-				}),
-				srlndda.WithLogger(nddcopts.Logger.WithValues("nddasrlhandler", name)),
-			),
+			log:             nddcopts.Logger.WithValues("applogic", name),
+			newVpc:          vpcfn,
+			newVpcList:      vpclfn,
+			newTopoNodeList: tnlfn,
+			registry:        nddcopts.Registry,
+			intents:         make(map[string]*intent.Compositeintent),
+			abstractions:    make(map[string]*abstraction.Compositeabstraction),
+			/*
+				srlNddaHandler: srlndda.New(
+					srlndda.WithClient(resource.ClientApplicator{
+						Client:     mgr.GetClient(),
+						Applicator: resource.NewAPIPatchingApplicator(mgr.GetClient()),
+					}),
+					srlndda.WithLogger(nddcopts.Logger.WithValues("nddasrlhandler", name)),
+				),
+			*/
 			niHandler: nihandler.New(
 				nihandler.WithClient(resource.ClientApplicator{
 					Client:     mgr.GetClient(),
@@ -117,14 +125,17 @@ type application struct {
 	client resource.ClientApplicator
 	log    logging.Logger
 
-	newVpc     func() vpcv1alpha1.Vp
-	newVpcList func() vpcv1alpha1.VpList
+	newVpc          func() vpcv1alpha1.Vp
+	newVpcList      func() vpcv1alpha1.VpList
+	newTopoNode     func() topov1alpha1.Tn
+	newTopoNodeList func() topov1alpha1.TnList
 
-	registry       registry.Registry
-	srlNddaHandler srlndda.Handler
+	registry registry.Registry
+	//srlNddaHandler srlndda.Handler
 	speedyHandler speedyhandler.Handler
 	niHandler     nihandler.Handler
 	intents       map[string]*intent.Compositeintent
+	abstractions  map[string]*abstraction.Compositeabstraction
 }
 
 func getCrName(mg resource.Managed) string {
@@ -146,12 +157,15 @@ func (r *application) Initialize(ctx context.Context, mg resource.Managed) error
 }
 
 func (r *application) Update(ctx context.Context, mg resource.Managed) (map[string]string, error) {
+	crName := getCrName(mg)
+	log := r.log.WithValues("crName", crName)
 	cr, ok := mg.(*vpcv1alpha1.Vpc)
 	if !ok {
 		return nil, errors.New(errUnexpectedResource)
 	}
+	log.Debug("Update ...")
 
-	r.speedyHandler.Init(getCrName(mg))
+	r.speedyHandler.Init(crName)
 
 	//return r.handleAppLogic(ctx, cr)
 	info, err := r.populateSchema(ctx, mg)
@@ -159,13 +173,42 @@ func (r *application) Update(ctx context.Context, mg resource.Managed) (map[stri
 		return info, err
 	}
 
-	_, err = r.intents[getCrName(mg)].Validate(ctx, mg, map[string]map[string]struct{}{})
+	// list all resources which are currently in the system
+	resources, err := r.intents[crName].List(ctx, mg, map[string]map[string]nddpresource.Managed{})
 	if err != nil {
+		log.Debug("intent list failed", "error", err)
 		return nil, err
 	}
-	labels := make(map[string]string)
-	if err := r.intents[getCrName(mg)].Deploy(ctx, mg, labels); err != nil {
+
+	// validate if the resources listed before still exists -> returns a map with resource that should be deleted
+	resources, err = r.intents[crName].Validate(ctx, mg, resources)
+	if err != nil {
+		log.Debug("intent validate failed", "error", err)
 		return nil, err
+	}
+
+	// delete the resources which should no longer be present
+	if err := r.intents[crName].Delete(ctx, mg, resources); err != nil {
+		log.Debug("intent delete failed", "error", err)
+		return nil, err
+	}
+
+	labels := make(map[string]string)
+	if err := r.intents[crName].Deploy(ctx, mg, labels); err != nil {
+		log.Debug("intent deploy failed", "error", err)
+		return nil, err
+	}
+
+	// list all resources which are currently in the system
+	resources, err = r.intents[crName].List(ctx, mg, map[string]map[string]nddpresource.Managed{})
+	if err != nil {
+		log.Debug("intent list failed", "error", err)
+		return nil, err
+	}
+	for nddpKind, nddpManaged := range resources {
+		for nddpName, nddpm := range nddpManaged {
+			log.Debug("nddp status", "kind", nddpKind, "name", nddpName, "Status", nddpm.GetCondition(nddv1.ConditionKindReady))
+		}
 	}
 
 	cr.SetOrganization(cr.GetOrganization())
@@ -178,6 +221,7 @@ func (r *application) Update(ctx context.Context, mg resource.Managed) (map[stri
 func (r *application) FinalUpdate(ctx context.Context, mg resource.Managed) {
 	// the reconciler always starts from scratch without history, hence we delete the intent data from the map
 	delete(r.intents, getCrName(mg))
+	delete(r.abstractions, getCrName(mg))
 }
 
 func (r *application) Timeout(ctx context.Context, mg resource.Managed) time.Duration {
@@ -197,7 +241,6 @@ func (r *application) Timeout(ctx context.Context, mg resource.Managed) time.Dur
 }
 
 func (r *application) Delete(ctx context.Context, mg resource.Managed) (bool, error) {
-
 	r.speedyHandler.Init(getCrName(mg))
 	_, err := r.populateSchema(ctx, mg)
 	if err != nil {
@@ -221,6 +264,8 @@ func (r *application) populateSchema(ctx context.Context, mg resource.Managed) (
 
 	crName := getCrName(mg)
 	r.intents[crName] = intent.New(r.client, crName)
+	//ci := r.intents[crName]
+	r.abstractions[crName] = abstraction.New(r.client, crName)
 
 	addressAllocationStrategy, err := r.registry.GetAddressAllocationStrategy(ctx, mg)
 	if err != nil {
@@ -228,6 +273,12 @@ func (r *application) populateSchema(ctx context.Context, mg resource.Managed) (
 	}
 
 	niInfos, err := r.allocateNiIndexes(ctx, cr)
+	if err != nil {
+		return nil, err
+	}
+
+	// get all the nodes in the topology
+	nodeInfo, err := r.gatherNodeInfo(ctx, mg)
 	if err != nil {
 		return nil, err
 	}
@@ -243,26 +294,13 @@ func (r *application) populateSchema(ctx context.Context, mg resource.Managed) (
 			return nil, err
 		}
 		log.Debug("bdName info", "epgSelectors", epgSelectors, "nodeItfceSelectors", nodeItfceSelectors)
-		// get the nodes and interfaces based on the epg, nodeitfce selectors
-		selectedNodeItfces, err := r.srlNddaHandler.GetSelectedNodeItfces(mg, epgSelectors, nodeItfceSelectors)
-		if err != nil {
-			return nil, err
-		}
-		log.Debug("bdName info", "selectedNodeItfces", selectedNodeItfces)
-		for deviceName, itfces := range selectedNodeItfces {
-			for _, itfceInfo := range itfces {
-				r.PopulateSchema(ctx, mg, deviceName, itfceInfo, niInfo, addressAllocationStrategy)
-			}
-		}
 
-		// if the tunnel mechanism in the bridge domin is vxlan add the vxlan interface
-		if cr.GetBridgeDomainTunnel(bdName) == vpcv1alpha1.TunnelVxlan.String() {
-			for deviceName := range selectedNodeItfces {
-				itfceInfo := itfceinfo.NewItfceInfo(
-					itfceinfo.WithItfceName("vxlan0"),
-					itfceinfo.WithItfceKind(networkv1alpha1.E_InterfaceKind_VXLAN),
-				)
-				r.PopulateSchema(ctx, mg, deviceName, itfceInfo, niInfo, addressAllocationStrategy)
+		for _, n := range nodeInfo {
+			switch n.kind {
+			case "srl":
+				if err := r.srlPopulateBridgeDomain(ctx, mg, bdName, n, niInfo, epgSelectors, nodeItfceSelectors, addressAllocationStrategy); err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
@@ -280,28 +318,13 @@ func (r *application) populateSchema(ctx context.Context, mg resource.Managed) (
 		//log.Debug("routed nodeItfceSelectors", "nodeItfceSelectors", nodeItfceSelectors)
 		log.Debug("rtInfo info", "epgSelectors", epgSelectors, "nodeItfceSelectors", nodeItfceSelectors)
 		// get the nodes and interfaces based on the epg, nodeitfce selectors
-		selectedNodeItfces, err := r.srlNddaHandler.GetSelectedNodeItfces(mg, epgSelectors, nodeItfceSelectors)
-		if err != nil {
-			return nil, err
-		}
 
-		log.Debug("rtInfo info", "selectedNodeItfces", selectedNodeItfces)
-		for deviceName, itfces := range selectedNodeItfces {
-			for _, itfceInfo := range itfces {
-				r.PopulateSchema(ctx, mg, deviceName, itfceInfo, niInfo, addressAllocationStrategy)
-			}
-		}
-
-		log.Debug("vxlan info", "vxlan", cr.GetRoutingTableTunnel(rtName))
-
-		// if the tunnel mechanism in the bridge domin is vxlan add the vxlan interface
-		if cr.GetRoutingTableTunnel(rtName) == vpcv1alpha1.TunnelVxlan.String() {
-			for deviceName := range selectedNodeItfces {
-				itfceInfo := itfceinfo.NewItfceInfo(
-					itfceinfo.WithItfceName("vxlan0"),
-					itfceinfo.WithItfceKind(networkv1alpha1.E_InterfaceKind_VXLAN),
-				)
-				r.PopulateSchema(ctx, mg, deviceName, itfceInfo, niInfo, addressAllocationStrategy)
+		for _, n := range nodeInfo {
+			switch n.kind {
+			case "srl":
+				if err := r.srlPopulateRouteTable(ctx, mg, rtName, n, niInfo, epgSelectors, nodeItfceSelectors, addressAllocationStrategy); err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
@@ -325,46 +348,13 @@ func (r *application) populateSchema(ctx context.Context, mg resource.Managed) (
 					return nil, err
 				}
 				r.log.Debug("bdName info", "epgSelectors", epgSelectors, "nodeItfceSelectors", nodeItfceSelectors)
-				// get the nodes and interfaces based on the epg, nodeitfce selectors
-				selectedNodeItfces, err := r.srlNddaHandler.GetSelectedNodeItfces(mg, epgSelectors, nodeItfceSelectors)
-				if err != nil {
-					return nil, err
-				}
-				r.log.Debug("bdName info", "selectedNodeItfces", selectedNodeItfces)
 
-				for deviceName := range selectedNodeItfces {
-					// this provides all the ni info based on the initial allocation
-					niInfo := niInfos[niinfo.GetBdName(bdName)]
-
-					itfceInfo := itfceinfo.NewItfceInfo(
-						itfceinfo.WithItfceName("irb0"),
-						itfceinfo.WithItfceKind(networkv1alpha1.E_InterfaceKind_IRB),
-					)
-					r.PopulateSchema(ctx, mg, deviceName, itfceInfo, niInfo, addressAllocationStrategy)
-
-					// add vxlan in bridged domain
-					if cr.GetRoutingTableTunnel(rtName) == vpcv1alpha1.TunnelVxlan.String() {
-						itfceInfo := itfceinfo.NewItfceInfo(
-							itfceinfo.WithItfceName("vxlan0"),
-							itfceinfo.WithItfceKind(networkv1alpha1.E_InterfaceKind_VXLAN),
-						)
-						r.PopulateSchema(ctx, mg, deviceName, itfceInfo, niInfo, addressAllocationStrategy)
-					}
-
-					itfceInfo.SetIpv4Prefixes(bd.GetIPv4Prefixes())
-					itfceInfo.SetIpv6Prefixes(bd.GetIPv6Prefixes())
-
-					niInfo = niInfos[niinfo.GetRtName(rtName)]
-
-					r.PopulateSchema(ctx, mg, deviceName, itfceInfo, niInfo, addressAllocationStrategy)
-
-					// add vxlan in rt table
-					if cr.GetRoutingTableTunnel(rtName) == vpcv1alpha1.TunnelVxlan.String() {
-						itfceInfo := itfceinfo.NewItfceInfo(
-							itfceinfo.WithItfceName("vxlan0"),
-							itfceinfo.WithItfceKind(networkv1alpha1.E_InterfaceKind_VXLAN),
-						)
-						r.PopulateSchema(ctx, mg, deviceName, itfceInfo, niInfo, addressAllocationStrategy)
+				for _, n := range nodeInfo {
+					switch n.kind {
+					case "srl":
+						if err := r.srlPopulateRouteIrb(ctx, mg, bdName, rtName, n, niInfos, epgSelectors, nodeItfceSelectors, addressAllocationStrategy, bd); err != nil {
+							return nil, err
+						}
 					}
 				}
 			}

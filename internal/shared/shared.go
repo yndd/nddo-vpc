@@ -27,5 +27,5 @@ type NddControllerOptions struct {
 	Logger    logging.Logger
 	Poll      time.Duration
 	Namespace string
-	Registry registry.Registry
+	Registry  registry.Registry
 }

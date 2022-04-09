@@ -6,11 +6,10 @@ require (
 	github.com/openconfig/ygot v0.16.1
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.2.1
-	github.com/yndd/ndd-runtime v0.3.6
-	github.com/yndd/ndda-network v0.1.35
-	github.com/yndd/nddo-grpc v0.0.17
-	github.com/yndd/nddo-runtime v0.0.73
-	github.com/yndd/nddp-srl3 v0.1.0
+	github.com/yndd/ndd-runtime v0.4.7
+	github.com/yndd/ndda-network v0.1.52
+	github.com/yndd/nddo-runtime v0.0.76
+	github.com/yndd/nddp-srl3 v0.1.7
 	github.com/yndd/nddr-as-registry v0.0.7
 	github.com/yndd/nddr-ipam-registry v0.0.3
 	github.com/yndd/nddr-ni-registry v0.0.6
@@ -79,7 +78,6 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.1.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
-	github.com/hashicorp/go-msgpack v1.1.5 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.0 // indirect
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
@@ -124,6 +122,7 @@ require (
 	github.com/ugorji/go/codec v1.2.6 // indirect
 	github.com/xanzy/ssh-agent v0.3.1 // indirect
 	github.com/yndd/ndd-core v0.1.7 // indirect
+	github.com/yndd/nddo-grpc v0.0.17 // indirect
 	github.com/zealic/xignore v0.3.3 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.opencensus.io v0.23.0 // indirect
